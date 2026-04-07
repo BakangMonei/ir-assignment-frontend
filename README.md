@@ -1,70 +1,63 @@
-# Getting Started with Create React App
+# IR Assignment Frontend (Modernized)
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Production-oriented React frontend for an Information Retrieval platform integrated with a Spring Boot backend.
 
-## Available Scripts
+## Tech stack
 
-In the project directory, you can run:
+- React + React Router
+- React Query (server state)
+- Axios client with interceptors
+- Tailwind CSS + Framer Motion
+- React Toastify
+- Recharts
 
-### `npm start`
+## Setup
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+1. Install dependencies:
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+```bash
+npm install
+```
 
-### `npm test`
+2. Configure environment variables in `.env`:
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```env
+REACT_APP_API_BASE_URL=http://localhost:8080
+```
 
-### `npm run build`
+3. Start app:
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```bash
+npm start
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Scripts
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+- `npm start` - run development server
+- `npm run build` - create production build
+- `npm test` - run tests
 
-### `npm run eject`
+## Architecture overview
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+```text
+src/
+  app/           # app shell and routing
+  pages/         # route-level pages
+  features/      # domain-specific modules (documents/search/indexing/evaluation/analytics/queries/results)
+  shared/        # reusable api client, constants, hooks, UI primitives, utilities
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## API behavior assumptions
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+- API wraps responses as `{ success, data, message, statusCode }`.
+- Client reads `data` automatically and treats `success=false` as an application error.
+- Search, analytics, and evaluation list payloads may be returned as arrays or paginated objects; UI handles both.
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## Current module coverage
 
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- Documents: list/create/delete + filters and pagination params
+- Search: advanced search input, model/toggles, expansion trigger, scored list
+- Indexing: build/rebuild trigger + status polling
+- Evaluation: run action + metrics + PR curve chart
+- Analytics: term distribution + zipf trend
+- Queries/Results: API layer and route placeholders ready for full CRUD component expansion

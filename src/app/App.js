@@ -1,5 +1,5 @@
-import { AppRouter } from './app/router/AppRouter';
-import { DashboardLayout } from './app/shared/ui/DashboardLayout';
+import { AppRouter } from './router/AppRouter';
+import { DashboardLayout } from '../shared/ui/DashboardLayout';
 
 function App() {
   return (
