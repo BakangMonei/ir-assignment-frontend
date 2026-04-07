@@ -30,5 +30,38 @@ export function Button({ children, className = '', ...props }) {
 }
 
 export function Input(props) {
-  return <input className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm" {...props} />;
+  return (
+    <input
+      className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none ring-blue-200 placeholder:text-gray-400 focus:ring-2"
+      {...props}
+    />
+  );
+}
+
+export function Select(props) {
+  return (
+    <select
+      className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none ring-blue-200 focus:ring-2"
+      {...props}
+    />
+  );
+}
+
+export function EmptyState({ title, description }) {
+  return (
+    <div className="rounded-md border border-dashed border-gray-300 bg-gray-50 p-6 text-center">
+      <p className="font-medium text-gray-700">{title}</p>
+      <p className="mt-1 text-sm text-gray-500">{description}</p>
+    </div>
+  );
+}
+
+export function Pill({ children, tone = 'default' }) {
+  const toneClass =
+    tone === 'success'
+      ? 'bg-emerald-100 text-emerald-700'
+      : tone === 'danger'
+      ? 'bg-red-100 text-red-700'
+      : 'bg-gray-100 text-gray-700';
+  return <span className={`rounded-full px-2 py-1 text-xs font-medium ${toneClass}`}>{children}</span>;
 }

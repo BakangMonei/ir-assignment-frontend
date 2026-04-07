@@ -1,12 +1,1 @@
-import { AppRouter } from './app/router/AppRouter';
-import { DashboardLayout } from './app/shared/ui/DashboardLayout';
-
-function App() {
-  return (
-    <DashboardLayout>
-      <AppRouter />
-    </DashboardLayout>
-  );
-}
-
-export default App;
+export { default } from './app/App';

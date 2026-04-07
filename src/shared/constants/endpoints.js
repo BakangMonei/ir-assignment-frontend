@@ -13,4 +13,7 @@ export const ENDPOINTS = {
   evaluationPRCurve: '/evaluation/pr-curve',
   analyticsTermDistribution: '/analytics/term-distribution',
   analyticsZipf: '/analytics/zipf',
+  legacyImportCisi: '/api/index/import/cisi',
+  legacyImportPubmed: '/api/index/import/pubmed',
+  legacyUploadDocuments: '/api/documents/upload',
 };

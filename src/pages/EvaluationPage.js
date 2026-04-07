@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { getEvaluationMetrics, getPRCurve, runEvaluation } from '../features/evaluation/api/evaluationApi';
-import { Button, Card, Input } from '../shared/ui/UiPrimitives';
+import { Button, Card, EmptyState, Input } from '../shared/ui/UiPrimitives';
+import { usePlatformReadiness } from '../shared/hooks/usePlatformReadiness';
 
 export function EvaluationPage() {
+  const readiness = usePlatformReadiness();
   const [payload, setPayload] = useState({ relevantDocIds: '', retrievedDocIds: '' });
   const metricsQuery = useQuery({ queryKey: ['evaluation-metrics'], queryFn: getEvaluationMetrics });
   const prCurveQuery = useQuery({ queryKey: ['evaluation-pr'], queryFn: getPRCurve });
@@ -13,7 +15,13 @@ export function EvaluationPage() {
 
   return (
     <div className="space-y-4">
-      <Card title="Run Evaluation" actions={<Button onClick={() => runMutation.mutate({
+      {!readiness.evaluationEnabled && (
+        <EmptyState
+          title="Evaluation is disabled"
+          description="Evaluation requires import/upload + built index + relevance data (CISI)."
+        />
+      )}
+      <Card title="Run Evaluation" actions={<Button disabled={!readiness.evaluationEnabled} onClick={() => runMutation.mutate({
         relevantDocIds: payload.relevantDocIds.split(',').map((v) => v.trim()),
         retrievedDocIds: payload.retrievedDocIds.split(',').map((v) => v.trim()),
       })}>Run</Button>}>

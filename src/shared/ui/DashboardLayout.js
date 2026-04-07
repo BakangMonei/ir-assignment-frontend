@@ -1,7 +1,10 @@
 import { NavLink } from 'react-router-dom';
 import { Activity, BarChart3, Database, FileText, Search, Settings, SlidersHorizontal } from 'lucide-react';
+import { Input, Pill } from './UiPrimitives';
+import { usePlatformReadiness } from '../hooks/usePlatformReadiness';
 
 const links = [
+  { to: '/data-source', label: 'Data Source', icon: Database },
   { to: '/documents', label: 'Documents', icon: FileText },
   { to: '/search', label: 'Search', icon: Search },
   { to: '/queries', label: 'Queries', icon: SlidersHorizontal },
@@ -13,6 +16,8 @@ const links = [
 ];
 
 export function DashboardLayout({ children }) {
+  const readiness = usePlatformReadiness();
+
   return (
     <div className="min-h-screen md:flex">
       <aside className="w-full border-b border-gray-200 bg-white p-4 md:w-64 md:border-b-0 md:border-r">
@@ -35,8 +40,18 @@ export function DashboardLayout({ children }) {
         </nav>
       </aside>
       <main className="flex-1 p-4 md:p-6">
-        <header className="mb-4 rounded-md bg-white p-3 shadow-sm">
-          <p className="text-sm text-gray-500">System status: Connected to backend</p>
+        <header className="mb-4 flex flex-col gap-3 rounded-md bg-white p-3 shadow-sm md:flex-row md:items-center md:justify-between">
+          <Input
+            aria-label="Global search"
+            placeholder="Global quick search (UI helper)"
+            className="md:max-w-sm"
+          />
+          <div className="flex items-center gap-2">
+            <Pill>{`Dataset: ${readiness.dataset}`}</Pill>
+            <Pill tone={readiness.backendConnected ? 'success' : 'danger'}>
+              {readiness.backendConnected ? 'Backend connected' : 'Backend disconnected'}
+            </Pill>
+          </div>
         </header>
         {children}
       </main>
