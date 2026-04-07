@@ -49,7 +49,7 @@ export function DataSourcePage() {
   return (
     <div className="space-y-4">
       <Card title="Dataset Setup (Entry Point)">
-        <p className="mb-4 text-sm text-gray-600">
+        <p className="mb-4 text-sm text-gray-300">
           Start by importing a built-in dataset or uploading custom files. Search and Evaluation are enabled only after import + indexing.
         </p>
         <div className="grid gap-3 md:grid-cols-2">

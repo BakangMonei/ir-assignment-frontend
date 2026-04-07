@@ -26,7 +26,7 @@ export function IndexingPage() {
         {!readiness.importCompleted && (
           <p className="mb-3 text-sm text-amber-700">Import/upload data first in Data Source, then build index.</p>
         )}
-        <pre className="overflow-auto rounded bg-gray-100 p-3 text-xs">{JSON.stringify(data || {}, null, 2)}</pre>
+        <pre className="overflow-auto rounded bg-gray-800 p-3 text-xs border border-gray-700">{JSON.stringify(data || {}, null, 2)}</pre>
       </Card>
     </div>
   );

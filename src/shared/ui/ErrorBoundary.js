@@ -12,7 +12,12 @@ export class ErrorBoundary extends React.Component {
 
   render() {
     if (this.state.hasError) {
-      return <div className="p-6 text-red-700">An unexpected error occurred. Please reload.</div>;
+      return (
+        <div className="m-6 rounded-xl border border-red-400/30 bg-red-500/10 p-6 text-red-200">
+          <p className="text-lg font-semibold">System fault detected</p>
+          <p className="mt-1 text-sm text-red-200/80">An unexpected error occurred. Please reload.</p>
+        </div>
+      );
     }
     return this.props.children;
   }

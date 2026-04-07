@@ -31,7 +31,7 @@ export function EvaluationPage() {
         </div>
       </Card>
       <Card title="Metrics">
-        <pre className="rounded bg-gray-100 p-3 text-xs">{JSON.stringify(metricsQuery.data || runMutation.data || {}, null, 2)}</pre>
+        <pre className="rounded bg-gray-800 p-3 text-xs border border-gray-700  ">{JSON.stringify(metricsQuery.data || runMutation.data || {}, null, 2)}</pre>
       </Card>
       <Card title="PR Curve">
         <div className="h-72">
