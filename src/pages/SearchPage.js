@@ -5,6 +5,7 @@ import { expandQuery, performSearch } from '../features/search/api/searchApi';
 import { Button, Card, EmptyState, Input, Select } from '../shared/ui/UiPrimitives';
 import { getErrorMessage } from '../shared/utils/errorUtils';
 import { usePlatformReadiness } from '../shared/hooks/usePlatformReadiness';
+import { downloadAsCsv, downloadAsJson } from '../shared/utils/downloadUtils';
 
 const defaultSearch = {
   query: '',
@@ -83,6 +84,23 @@ export function SearchPage() {
       {expandedQueryText && (
         <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
           Expanded query: <span className="font-medium">{expandedQueryText}</span>
+        </div>
+      )}
+
+      {rows.length > 0 && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          <Button
+            className="bg-slate-700 hover:bg-slate-800"
+            onClick={() => downloadAsJson(rows, `search-results-${Date.now()}.json`)}
+          >
+            Download JSON
+          </Button>
+          <Button
+            className="bg-indigo-600 hover:bg-indigo-700"
+            onClick={() => downloadAsCsv(rows, `search-results-${Date.now()}.csv`)}
+          >
+            Download CSV
+          </Button>
         </div>
       )}
 

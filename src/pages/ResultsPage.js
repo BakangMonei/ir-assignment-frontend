@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { resultsApi } from '../features/results/api/resultsApi';
 import { Button, Card, Input } from '../shared/ui/UiPrimitives';
 import { getErrorMessage } from '../shared/utils/errorUtils';
+import { downloadAsCsv, downloadAsJson } from '../shared/utils/downloadUtils';
 
 export function ResultsPage() {
   const queryClient = useQueryClient();
@@ -33,10 +34,23 @@ export function ResultsPage() {
   const rows = data?.content || data || [];
 
   return (
-    <Card title="Results" actions={<Button onClick={() => createMutation.mutate({ name })}>Create Result Set</Button>}>
+    <Card
+      title="Results"
+      actions={<Button onClick={() => createMutation.mutate({ name })}>Create Result Set</Button>}
+    >
       <div className="mb-3 max-w-lg">
         <Input placeholder="Result set name" value={name} onChange={(e) => setName(e.target.value)} />
       </div>
+      {rows.length > 0 && (
+        <div className="mb-3 flex gap-2">
+          <Button className="bg-slate-700 hover:bg-slate-800" onClick={() => downloadAsJson(rows, `saved-results-${Date.now()}.json`)}>
+            Download JSON
+          </Button>
+          <Button className="bg-indigo-600 hover:bg-indigo-700" onClick={() => downloadAsCsv(rows, `saved-results-${Date.now()}.csv`)}>
+            Download CSV
+          </Button>
+        </div>
+      )}
       {isLoading ? <p className="text-sm text-gray-500">Loading...</p> : (
         <ul className="space-y-2">
           {rows.map((item) => (

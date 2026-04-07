@@ -1,63 +1,208 @@
-# IR Assignment Frontend (Modernized)
+# IR Platform Frontend Manual
 
-Production-oriented React frontend for an Information Retrieval platform integrated with a Spring Boot backend.
+Production-oriented React frontend for the Spring Boot Information Retrieval backend.
 
-## Tech stack
+## 1) What this frontend does
 
-- React + React Router
-- React Query (server state)
-- Axios client with interceptors
-- Tailwind CSS + Framer Motion
-- React Toastify
-- Recharts
+This UI is designed around a guided workflow:
 
-## Setup
+1. **Data Source** (import/upload)
+2. **Indexing** (build/rebuild index)
+3. **Search** (retrieve ranked results)
+4. **Evaluation** (when relevance data exists, e.g. CISI)
+5. **Analytics** (term distribution + Zipf)
 
-1. Install dependencies:
+The app enforces readiness:
+
+- Search is enabled only after data import/upload + index build
+- Evaluation is enabled only when relevance data is available (CISI)
+
+## 2) Requirements
+
+- Node.js 18+ (or latest LTS)
+- npm
+- Backend running at `http://localhost:8080`
+
+## 3) Setup and run
+
+### Install
 
 ```bash
 npm install
 ```
 
-2. Configure environment variables in `.env`:
+### Environment
+
+Create `.env`:
 
 ```env
 REACT_APP_API_BASE_URL=http://localhost:8080
 ```
 
-3. Start app:
+### Start dev server
 
 ```bash
 npm start
 ```
 
-## Scripts
+### Build for production
 
-- `npm start` - run development server
-- `npm run build` - create production build
-- `npm test` - run tests
+```bash
+npm run build
+```
 
-## Architecture overview
+### Run tests
+
+```bash
+npm test -- --watch=false --watchman=false
+```
+
+## 4) Backend endpoint strategy
+
+The app prefers modern endpoints for core workflows, with legacy fallback adapters for import/upload.
+
+### Preferred modern endpoints
+
+- Documents: `/documents`
+- Queries: `/queries`
+- Results: `/results`
+- Indexing: `/index/build`, `/index/status`
+- Search: `/search`, `/search/expand`
+- Evaluation: `/evaluation/run`, `/evaluation/metrics`, `/evaluation/pr-curve`
+- Analytics: `/analytics/term-distribution`, `/analytics/zipf`
+
+### Legacy fallback endpoints
+
+- `POST /api/index/import/cisi`
+- `POST /api/index/import/pubmed`
+- `POST /api/documents/upload`
+
+## 5) Full operator manual (step-by-step)
+
+### Step A — Data Source (entry point)
+
+Go to **Data Source** in sidebar.
+
+You can:
+
+- **Import CISI** (dataset with relevance data)
+- **Import PubMed**
+- **Upload custom file** (`.txt`, `.xml`, `.zip`)
+
+After success, UI shows status and guides you to indexing.
+
+### Step B — Build/Rebuild Index
+
+Go to **Indexing**.
+
+- Click **Build/Rebuild Index**
+- Wait for status cards/json to refresh
+
+Once index is available, search becomes enabled.
+
+### Step C — Search Workbench
+
+Go to **Search**.
+
+Set:
+
+- `query`
+- `model` (`tf`, `tfidf`, `normalized`, `bm25`)
+- `stemming`, `expansion`
+- filters (`category`, `year`, `keywords`, `operator`)
+- pagination (`page`, `size`)
+
+Click **Search** to retrieve ranked results.
+
+Optional:
+
+- **Expand Query** to call query expansion API
+
+Export:
+
+- **Download JSON**
+- **Download CSV**
+
+### Step D — Results library
+
+Go to **Results**.
+
+- Manage saved result sets
+- Export saved results using:
+  - **Download JSON**
+  - **Download CSV**
+
+### Step E — Evaluation pipeline
+
+Go to **Evaluation**.
+
+For CISI workflow:
+
+- Provide relevant and retrieved IDs
+- Click **Run**
+- Review Precision, Recall, F1, MAP and PR curve
+
+Evaluation stays disabled until prerequisite readiness is met.
+
+### Step F — Analytics
+
+Go to **Analytics**.
+
+View:
+
+- Term distribution table
+- Zipf trend chart
+
+Page is hardened for multiple backend payload shapes.
+
+## 6) UI controls and navigation
+
+- **Collapsible sidebar**: click collapse/expand control in sidebar header
+- **Top bar status pills**:
+  - active dataset indicator (`none`, `CISI`, `PubMed`, `Uploaded`)
+  - backend connection indicator
+- **Toasts**: success/failure feedback for actions
+- **Empty/error states**: shown when data is missing or endpoint fails
+
+## 7) Project architecture
 
 ```text
 src/
-  app/           # app shell and routing
-  pages/         # route-level pages
-  features/      # domain-specific modules (documents/search/indexing/evaluation/analytics/queries/results)
-  shared/        # reusable api client, constants, hooks, UI primitives, utilities
+  app/
+    router/               # route definitions
+    App.js                # app shell composition
+  features/
+    */api/                # domain API wrappers
+  pages/                  # route-level screens
+  shared/
+    api/                  # axios client with interceptors
+    constants/            # endpoints
+    hooks/                # readiness hooks, debounced hooks
+    state/                # platform state (localStorage)
+    ui/                   # reusable primitives/layout
+    utils/                # error parsing, download utils
 ```
 
-## API behavior assumptions
+## 8) Troubleshooting
 
-- API wraps responses as `{ success, data, message, statusCode }`.
-- Client reads `data` automatically and treats `success=false` as an application error.
-- Search, analytics, and evaluation list payloads may be returned as arrays or paginated objects; UI handles both.
+### Search/Evaluation disabled
 
-## Current module coverage
+- Ensure you imported/uploaded data first
+- Ensure index build completed
+- For evaluation: use CISI import (relevance data)
 
-- Documents: list/create/delete + filters and pagination params
-- Search: advanced search input, model/toggles, expansion trigger, scored list
-- Indexing: build/rebuild trigger + status polling
-- Evaluation: run action + metrics + PR curve chart
-- Analytics: term distribution + zipf trend
-- Queries/Results: API layer and route placeholders ready for full CRUD component expansion
+### Backend disconnected indicator
+
+- Confirm backend is running at `REACT_APP_API_BASE_URL`
+- Check CORS and network access
+
+### No analytics chart data
+
+- Build index and run searches first
+- Verify backend returns analytics payload
+
+## 9) Notes for extension
+
+- Add authenticated uploads if backend introduces auth
+- Add richer table pagination metadata binding when backend includes total counts
+- Add E2E tests for full A→F workflow

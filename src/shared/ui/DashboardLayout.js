@@ -1,7 +1,8 @@
 import { NavLink } from 'react-router-dom';
-import { Activity, BarChart3, Database, FileText, Search, Settings, SlidersHorizontal } from 'lucide-react';
+import { Activity, BarChart3, ChevronLeft, ChevronRight, Database, FileText, Search, Settings, SlidersHorizontal } from 'lucide-react';
 import { Input, Pill } from './UiPrimitives';
 import { usePlatformReadiness } from '../hooks/usePlatformReadiness';
+import { useState } from 'react';
 
 const links = [
   { to: '/data-source', label: 'Data Source', icon: Database },
@@ -17,28 +18,41 @@ const links = [
 
 export function DashboardLayout({ children }) {
   const readiness = usePlatformReadiness();
+  const [collapsed, setCollapsed] = useState(false);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 md:flex">
-      <aside className="w-full border-b border-cyan-500/20 bg-slate-950/90 p-4 md:w-72 md:border-b-0 md:border-r">
-        <h1 className="mb-4 bg-gradient-to-r from-cyan-300 to-blue-500 bg-clip-text text-xl font-bold text-transparent">
-          IR Platform
-        </h1>
+      <aside className={`w-full border-b border-cyan-500/20 bg-slate-950/90 p-4 transition-all md:border-b-0 md:border-r ${collapsed ? 'md:w-20' : 'md:w-72'}`}>
+        <div className="mb-4 flex items-center justify-between">
+          {!collapsed && (
+            <h1 className="bg-gradient-to-r from-cyan-300 to-blue-500 bg-clip-text text-xl font-bold text-transparent">
+              IR Platform
+            </h1>
+          )}
+          <button
+            className="rounded-md border border-slate-700 bg-slate-900/70 p-2 text-slate-300 hover:border-cyan-400/50 hover:text-cyan-200"
+            onClick={() => setCollapsed((v) => !v)}
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          </button>
+        </div>
         <nav className="grid grid-cols-2 gap-2 md:grid-cols-1">
           {links.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}
               className={({ isActive }) =>
-                `flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition ${
+                `flex items-center rounded-md border px-3 py-2 text-sm transition ${collapsed ? 'justify-center' : 'gap-2'} ${
                   isActive
                     ? 'border-cyan-300/40 bg-cyan-500/20 text-cyan-200 shadow-[0_0_18px_rgba(34,211,238,0.15)]'
                     : 'border-slate-700 bg-slate-900/60 text-slate-300 hover:border-cyan-400/40 hover:text-cyan-200'
                 }`
               }
+              title={label}
             >
               <Icon size={16} />
-              {label}
+              {!collapsed && label}
             </NavLink>
           ))}
         </nav>
