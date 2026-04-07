@@ -20,6 +20,18 @@ const defaultSearch = {
   size: 10,
 };
 
+function normalizeSearchRows(raw) {
+  if (Array.isArray(raw)) return raw;
+  if (!raw || typeof raw !== 'object') return [];
+
+  if (Array.isArray(raw.content)) return raw.content;
+  if (Array.isArray(raw.items)) return raw.items;
+  if (Array.isArray(raw.results)) return raw.results;
+  if (Array.isArray(raw.documents)) return raw.documents;
+
+  return [];
+}
+
 export function SearchPage() {
   const readiness = usePlatformReadiness();
   const [params, setParams] = useState(defaultSearch);
@@ -34,21 +46,24 @@ export function SearchPage() {
 
   const expandMutation = useMutation({
     mutationFn: () => expandQuery(params.query),
-    onSuccess: (expanded) => {
+    onSuccess: expanded => {
       const nextExpanded = expanded?.expandedQuery || expanded?.query || '';
       setExpandedQueryText(nextExpanded);
       toast.success(nextExpanded ? 'Query expanded successfully' : 'Expansion completed');
     },
-    onError: (error) => toast.error(getErrorMessage(error)),
+    onError: error => toast.error(getErrorMessage(error)),
   });
 
-  const rows = data?.content || data?.items || data || [];
+  const rows = normalizeSearchRows(data);
 
   return (
     <Card
       title="Advanced Search"
       actions={
-        <Button onClick={() => setEnabled(true)} disabled={!params.query.trim() || !readiness.searchEnabled}>
+        <Button
+          onClick={() => setEnabled(true)}
+          disabled={!params.query.trim() || !readiness.searchEnabled}
+        >
           Search
         </Button>
       }
@@ -59,26 +74,80 @@ export function SearchPage() {
         </div>
       )}
       <div className="mb-4 grid gap-2 md:grid-cols-4">
-        <Input placeholder="Query" value={params.query} onChange={(e) => setParams((v) => ({ ...v, query: e.target.value }))} />
-        <Select value={params.model} onChange={(e) => setParams((v) => ({ ...v, model: e.target.value }))}>
-          <option value="tf">tf</option><option value="tfidf">tfidf</option><option value="normalized">normalized</option><option value="bm25">bm25</option>
+        <Input
+          placeholder="Query"
+          value={params.query}
+          onChange={e => setParams(v => ({ ...v, query: e.target.value }))}
+        />
+        <Select
+          value={params.model}
+          onChange={e => setParams(v => ({ ...v, model: e.target.value }))}
+        >
+          <option value="tf">tf</option>
+          <option value="tfidf">tfidf</option>
+          <option value="normalized">normalized</option>
+          <option value="bm25">bm25</option>
         </Select>
-        <Input placeholder="Keywords" value={params.keywords} onChange={(e) => setParams((v) => ({ ...v, keywords: e.target.value }))} />
-        <Select value={params.operator} onChange={(e) => setParams((v) => ({ ...v, operator: e.target.value }))}>
+        <Input
+          placeholder="Keywords"
+          value={params.keywords}
+          onChange={e => setParams(v => ({ ...v, keywords: e.target.value }))}
+        />
+        <Select
+          value={params.operator}
+          onChange={e => setParams(v => ({ ...v, operator: e.target.value }))}
+        >
           <option value="AND">AND</option>
           <option value="OR">OR</option>
         </Select>
       </div>
       <div className="mb-4 grid gap-2 md:grid-cols-4">
-        <Input placeholder="Category" value={params.category} onChange={(e) => setParams((v) => ({ ...v, category: e.target.value }))} />
-        <Input placeholder="Year" value={params.year} onChange={(e) => setParams((v) => ({ ...v, year: e.target.value }))} />
-        <Input placeholder="Page" type="number" value={params.page} onChange={(e) => setParams((v) => ({ ...v, page: Number(e.target.value) || 0 }))} />
-        <Input placeholder="Size" type="number" value={params.size} onChange={(e) => setParams((v) => ({ ...v, size: Number(e.target.value) || 10 }))} />
+        <Input
+          placeholder="Category"
+          value={params.category}
+          onChange={e => setParams(v => ({ ...v, category: e.target.value }))}
+        />
+        <Input
+          placeholder="Year"
+          value={params.year}
+          onChange={e => setParams(v => ({ ...v, year: e.target.value }))}
+        />
+        <Input
+          placeholder="Page"
+          type="number"
+          value={params.page}
+          onChange={e => setParams(v => ({ ...v, page: Number(e.target.value) || 0 }))}
+        />
+        <Input
+          placeholder="Size"
+          type="number"
+          value={params.size}
+          onChange={e => setParams(v => ({ ...v, size: Number(e.target.value) || 10 }))}
+        />
       </div>
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => expandMutation.mutate()}>Expand Query</Button>
-        <label className="text-sm"><input type="checkbox" checked={params.stemming} onChange={(e) => setParams((v) => ({ ...v, stemming: e.target.checked }))} /> Stemming</label>
-        <label className="text-sm"><input type="checkbox" checked={params.expansion} onChange={(e) => setParams((v) => ({ ...v, expansion: e.target.checked }))} /> Expansion</label>
+        <Button
+          className="bg-emerald-600 hover:bg-emerald-700"
+          onClick={() => expandMutation.mutate()}
+        >
+          Expand Query
+        </Button>
+        <label className="text-sm">
+          <input
+            type="checkbox"
+            checked={params.stemming}
+            onChange={e => setParams(v => ({ ...v, stemming: e.target.checked }))}
+          />{' '}
+          Stemming
+        </label>
+        <label className="text-sm">
+          <input
+            type="checkbox"
+            checked={params.expansion}
+            onChange={e => setParams(v => ({ ...v, expansion: e.target.checked }))}
+          />{' '}
+          Expansion
+        </label>
       </div>
 
       {expandedQueryText && (
@@ -113,8 +182,13 @@ export function SearchPage() {
       ) : (
         <ul className="space-y-2">
           {rows.map((item, idx) => (
-            <li key={item.id || idx} className="rounded border border-gray-200 bg-white p-3 text-sm">
-              <div className="font-medium">{item.title || item.documentId || `Result ${idx + 1}`}</div>
+            <li
+              key={item.id || idx}
+              className="rounded border border-gray-200 bg-white p-3 text-sm"
+            >
+              <div className="font-medium">
+                {item.title || item.documentId || `Result ${idx + 1}`}
+              </div>
               <div className="text-gray-500">Score: {item.score ?? 'N/A'}</div>
             </li>
           ))}

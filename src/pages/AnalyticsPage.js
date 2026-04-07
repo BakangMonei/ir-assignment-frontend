@@ -35,11 +35,17 @@ export function AnalyticsPage() {
     <div className="space-y-4">
       <Card title="Term Distribution">
         {termQuery.isError ? (
-          <EmptyState title="Failed to load term distribution" description={getErrorMessage(termQuery.error)} />
+          <EmptyState
+            title="Failed to load term distribution"
+            description={getErrorMessage(termQuery.error)}
+          />
         ) : termQuery.isLoading ? (
           <p className="text-sm text-gray-500">Loading term distribution...</p>
         ) : termData.length === 0 ? (
-          <EmptyState title="No term distribution data" description="The backend returned an empty analytics payload." />
+          <EmptyState
+            title="No term distribution data"
+            description="The backend returned an empty analytics payload."
+          />
         ) : (
           <div className="max-h-72 overflow-auto rounded border border-gray-200">
             <table className="min-w-full text-sm">
@@ -53,7 +59,9 @@ export function AnalyticsPage() {
                 {termData.slice(0, 100).map((row, idx) => (
                   <tr key={`${row.term}-${idx}`} className="border-t border-gray-100">
                     <td className="px-3 py-2">{row.term ?? '-'}</td>
-                    <td className="px-3 py-2">{Number.isFinite(row.frequency) ? row.frequency : '-'}</td>
+                    <td className="px-3 py-2">
+                      {Number.isFinite(row.frequency) ? row.frequency : '-'}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -63,11 +71,17 @@ export function AnalyticsPage() {
       </Card>
       <Card title="Zipf Trend">
         {zipfQuery.isError ? (
-          <EmptyState title="Failed to load Zipf data" description={getErrorMessage(zipfQuery.error)} />
+          <EmptyState
+            title="Failed to load Zipf data"
+            description={getErrorMessage(zipfQuery.error)}
+          />
         ) : zipfQuery.isLoading ? (
           <p className="text-sm text-gray-500">Loading Zipf analytics...</p>
         ) : zipfData.length === 0 ? (
-          <EmptyState title="No Zipf data available" description="Try indexing documents first, then reload analytics." />
+          <EmptyState
+            title="No Zipf data available"
+            description="Try indexing documents first, then reload analytics."
+          />
         ) : (
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">

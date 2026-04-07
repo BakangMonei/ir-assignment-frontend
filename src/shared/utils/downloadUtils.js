@@ -10,7 +10,9 @@ function triggerDownload(blob, fileName) {
 }
 
 export function downloadAsJson(data, fileName = 'results.json') {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8' });
+  const blob = new Blob([JSON.stringify(data, null, 2)], {
+    type: 'application/json;charset=utf-8',
+  });
   triggerDownload(blob, fileName);
 }
 
@@ -20,12 +22,12 @@ export function downloadAsCsv(rows, fileName = 'results.csv') {
     return;
   }
 
-  const headers = Array.from(new Set(rows.flatMap((row) => Object.keys(row || {}))));
+  const headers = Array.from(new Set(rows.flatMap(row => Object.keys(row || {}))));
   const csv = [
     headers.join(','),
-    ...rows.map((row) =>
+    ...rows.map(row =>
       headers
-        .map((key) => {
+        .map(key => {
           const value = row?.[key] ?? '';
           const stringValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
           return `"${stringValue.replace(/"/g, '""')}"`;

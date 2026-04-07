@@ -19,7 +19,7 @@ export function ResultsPage() {
       queryClient.invalidateQueries({ queryKey: ['results'] });
       setName('');
     },
-    onError: (error) => toast.error(getErrorMessage(error)),
+    onError: error => toast.error(getErrorMessage(error)),
   });
 
   const removeMutation = useMutation({
@@ -28,7 +28,7 @@ export function ResultsPage() {
       toast.success('Result set deleted');
       queryClient.invalidateQueries({ queryKey: ['results'] });
     },
-    onError: (error) => toast.error(getErrorMessage(error)),
+    onError: error => toast.error(getErrorMessage(error)),
   });
 
   const rows = data?.content || data || [];
@@ -39,24 +39,42 @@ export function ResultsPage() {
       actions={<Button onClick={() => createMutation.mutate({ name })}>Create Result Set</Button>}
     >
       <div className="mb-3 max-w-lg">
-        <Input placeholder="Result set name" value={name} onChange={(e) => setName(e.target.value)} />
+        <Input placeholder="Result set name" value={name} onChange={e => setName(e.target.value)} />
       </div>
       {rows.length > 0 && (
         <div className="mb-3 flex gap-2">
-          <Button className="bg-slate-700 hover:bg-slate-800" onClick={() => downloadAsJson(rows, `saved-results-${Date.now()}.json`)}>
+          <Button
+            className="bg-slate-700 hover:bg-slate-800"
+            onClick={() => downloadAsJson(rows, `saved-results-${Date.now()}.json`)}
+          >
             Download JSON
           </Button>
-          <Button className="bg-indigo-600 hover:bg-indigo-700" onClick={() => downloadAsCsv(rows, `saved-results-${Date.now()}.csv`)}>
+          <Button
+            className="bg-indigo-600 hover:bg-indigo-700"
+            onClick={() => downloadAsCsv(rows, `saved-results-${Date.now()}.csv`)}
+          >
             Download CSV
           </Button>
         </div>
       )}
-      {isLoading ? <p className="text-sm text-gray-500">Loading...</p> : (
+      {isLoading ? (
+        <p className="text-sm text-gray-500">Loading...</p>
+      ) : (
         <ul className="space-y-2">
-          {rows.map((item) => (
-            <li key={item.id} className="flex items-center justify-between rounded border border-gray-200 p-3 text-sm">
+          {rows.map(item => (
+            <li
+              key={item.id}
+              className="flex items-center justify-between rounded border border-gray-200 p-3 text-sm"
+            >
               <span>{item.name || item.title || item.id}</span>
-              <Button className="bg-red-600 hover:bg-red-700" onClick={() => window.confirm('Delete result set?') && removeMutation.mutate(item.id)}>Delete</Button>
+              <Button
+                className="bg-red-600 hover:bg-red-700"
+                onClick={() =>
+                  window.confirm('Delete result set?') && removeMutation.mutate(item.id)
+                }
+              >
+                Delete
+              </Button>
             </li>
           ))}
         </ul>

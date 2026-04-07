@@ -1,5 +1,16 @@
 import { NavLink } from 'react-router-dom';
-import { Activity, BarChart3, ChevronLeft, ChevronRight, Database, FileText, Search, Settings, SlidersHorizontal } from 'lucide-react';
+import {
+  Activity,
+  BarChart3,
+  Beaker,
+  ChevronLeft,
+  ChevronRight,
+  Database,
+  FileText,
+  Search,
+  Settings,
+  SlidersHorizontal,
+} from 'lucide-react';
 import { Input, Pill } from './UiPrimitives';
 import { usePlatformReadiness } from '../hooks/usePlatformReadiness';
 import { useState } from 'react';
@@ -13,6 +24,7 @@ const links = [
   { to: '/indexing', label: 'Indexing', icon: Activity },
   { to: '/evaluation', label: 'Evaluation', icon: BarChart3 },
   { to: '/analytics', label: 'Analytics', icon: BarChart3 },
+  { to: '/experiments', label: 'Experiments', icon: Beaker },
   { to: '/settings', label: 'Settings', icon: Settings },
 ];
 
@@ -22,7 +34,9 @@ export function DashboardLayout({ children }) {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 md:flex">
-      <aside className={`w-full border-b border-cyan-500/20 bg-slate-950/90 p-4 transition-all md:border-b-0 md:border-r ${collapsed ? 'md:w-20' : 'md:w-72'}`}>
+      <aside
+        className={`w-full border-b border-cyan-500/20 bg-slate-950/90 p-4 transition-all md:border-b-0 md:border-r ${collapsed ? 'md:w-20' : 'md:w-72'}`}
+      >
         <div className="mb-4 flex items-center justify-between">
           {!collapsed && (
             <h1 className="bg-gradient-to-r from-cyan-300 to-blue-500 bg-clip-text text-xl font-bold text-transparent">
@@ -31,7 +45,7 @@ export function DashboardLayout({ children }) {
           )}
           <button
             className="rounded-md border border-slate-700 bg-slate-900/70 p-2 text-slate-300 hover:border-cyan-400/50 hover:text-cyan-200"
-            onClick={() => setCollapsed((v) => !v)}
+            onClick={() => setCollapsed(v => !v)}
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}

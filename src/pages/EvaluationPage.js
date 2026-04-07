@@ -1,14 +1,21 @@
 import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { getEvaluationMetrics, getPRCurve, runEvaluation } from '../features/evaluation/api/evaluationApi';
+import {
+  getEvaluationMetrics,
+  getPRCurve,
+  runEvaluation,
+} from '../features/evaluation/api/evaluationApi';
 import { Button, Card, EmptyState, Input } from '../shared/ui/UiPrimitives';
 import { usePlatformReadiness } from '../shared/hooks/usePlatformReadiness';
 
 export function EvaluationPage() {
   const readiness = usePlatformReadiness();
   const [payload, setPayload] = useState({ relevantDocIds: '', retrievedDocIds: '' });
-  const metricsQuery = useQuery({ queryKey: ['evaluation-metrics'], queryFn: getEvaluationMetrics });
+  const metricsQuery = useQuery({
+    queryKey: ['evaluation-metrics'],
+    queryFn: getEvaluationMetrics,
+  });
   const prCurveQuery = useQuery({ queryKey: ['evaluation-pr'], queryFn: getPRCurve });
 
   const runMutation = useMutation({ mutationFn: runEvaluation });
@@ -21,17 +28,37 @@ export function EvaluationPage() {
           description="Evaluation requires import/upload + built index + relevance data (CISI)."
         />
       )}
-      <Card title="Run Evaluation" actions={<Button disabled={!readiness.evaluationEnabled} onClick={() => runMutation.mutate({
-        relevantDocIds: payload.relevantDocIds.split(',').map((v) => v.trim()),
-        retrievedDocIds: payload.retrievedDocIds.split(',').map((v) => v.trim()),
-      })}>Run</Button>}>
+      <Card
+        title="Run Evaluation"
+        actions={
+          <Button
+            disabled={!readiness.evaluationEnabled}
+            onClick={() =>
+              runMutation.mutate({
+                relevantDocIds: payload.relevantDocIds.split(',').map(v => v.trim()),
+                retrievedDocIds: payload.retrievedDocIds.split(',').map(v => v.trim()),
+              })
+            }
+          >
+            Run
+          </Button>
+        }
+      >
         <div className="grid gap-2 md:grid-cols-2">
-          <Input placeholder="Relevant IDs (comma-separated)" onChange={(e) => setPayload((v) => ({ ...v, relevantDocIds: e.target.value }))} />
-          <Input placeholder="Retrieved IDs (comma-separated)" onChange={(e) => setPayload((v) => ({ ...v, retrievedDocIds: e.target.value }))} />
+          <Input
+            placeholder="Relevant IDs (comma-separated)"
+            onChange={e => setPayload(v => ({ ...v, relevantDocIds: e.target.value }))}
+          />
+          <Input
+            placeholder="Retrieved IDs (comma-separated)"
+            onChange={e => setPayload(v => ({ ...v, retrievedDocIds: e.target.value }))}
+          />
         </div>
       </Card>
       <Card title="Metrics">
-        <pre className="rounded bg-gray-800 p-3 text-xs border border-gray-700  ">{JSON.stringify(metricsQuery.data || runMutation.data || {}, null, 2)}</pre>
+        <pre className="rounded border border-gray-700 bg-gray-800 p-3 text-xs  ">
+          {JSON.stringify(metricsQuery.data || runMutation.data || {}, null, 2)}
+        </pre>
       </Card>
       <Card title="PR Curve">
         <div className="h-72">

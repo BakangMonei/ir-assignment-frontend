@@ -6,16 +6,21 @@ const http = axios.create({
   timeout: 20_000,
 });
 
-http.interceptors.request.use((config) => {
+http.interceptors.request.use(config => {
   if (process.env.NODE_ENV === 'development') {
     // eslint-disable-next-line no-console
-    console.log('[API Request]', config.method?.toUpperCase(), config.url, config.params || config.data);
+    console.log(
+      '[API Request]',
+      config.method?.toUpperCase(),
+      config.url,
+      config.params || config.data
+    );
   }
   return config;
 });
 
 http.interceptors.response.use(
-  (response) => {
+  response => {
     if (process.env.NODE_ENV === 'development') {
       // eslint-disable-next-line no-console
       console.log('[API Response]', response.config.url, response.data);
@@ -30,7 +35,7 @@ http.interceptors.response.use(
 
     return payload?.data ?? payload;
   },
-  (error) => Promise.reject(error)
+  error => Promise.reject(error)
 );
 
 export { http };

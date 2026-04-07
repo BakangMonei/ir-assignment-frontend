@@ -8,6 +8,7 @@ import { CrudPlaceholderPage } from '../../pages/CrudPlaceholderPage';
 import { QueriesPage } from '../../pages/QueriesPage';
 import { ResultsPage } from '../../pages/ResultsPage';
 import { DataSourcePage } from '../../pages/DataSourcePage';
+import { ExperimentsPage } from '../../pages/ExperimentsPage';
 
 export function AppRouter() {
   return (
@@ -21,6 +22,7 @@ export function AppRouter() {
       <Route path="/indexing" element={<IndexingPage />} />
       <Route path="/evaluation" element={<EvaluationPage />} />
       <Route path="/analytics" element={<AnalyticsPage />} />
+      <Route path="/experiments" element={<ExperimentsPage />} />
       <Route path="/settings" element={<CrudPlaceholderPage title="Settings" />} />
     </Routes>
   );

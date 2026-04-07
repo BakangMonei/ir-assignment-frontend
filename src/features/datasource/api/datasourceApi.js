@@ -8,11 +8,11 @@ const legacy = axios.create({
 });
 
 export function importCisi() {
-  return legacy.post(ENDPOINTS.legacyImportCisi).then((r) => r.data?.data ?? r.data);
+  return legacy.post(ENDPOINTS.legacyImportCisi).then(r => r.data?.data ?? r.data);
 }
 
 export function importPubmed() {
-  return legacy.post(ENDPOINTS.legacyImportPubmed).then((r) => r.data?.data ?? r.data);
+  return legacy.post(ENDPOINTS.legacyImportPubmed).then(r => r.data?.data ?? r.data);
 }
 
 export async function uploadDocumentFile(file) {
@@ -21,8 +21,10 @@ export async function uploadDocumentFile(file) {
 
   try {
     return await legacy
-      .post(ENDPOINTS.legacyUploadDocuments, formData, { headers: { 'Content-Type': 'multipart/form-data' } })
-      .then((r) => r.data?.data ?? r.data);
+      .post(ENDPOINTS.legacyUploadDocuments, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      .then(r => r.data?.data ?? r.data);
   } catch {
     // Fallback: create a manual document if legacy upload endpoint is unavailable.
     return http.post(ENDPOINTS.documents, {

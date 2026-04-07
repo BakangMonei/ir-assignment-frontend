@@ -18,7 +18,7 @@ export function QueriesPage() {
       queryClient.invalidateQueries({ queryKey: ['queries'] });
       setText('');
     },
-    onError: (error) => toast.error(getErrorMessage(error)),
+    onError: error => toast.error(getErrorMessage(error)),
   });
 
   const removeMutation = useMutation({
@@ -27,22 +27,35 @@ export function QueriesPage() {
       toast.success('Query deleted');
       queryClient.invalidateQueries({ queryKey: ['queries'] });
     },
-    onError: (error) => toast.error(getErrorMessage(error)),
+    onError: error => toast.error(getErrorMessage(error)),
   });
 
   const rows = data?.content || data || [];
 
   return (
-    <Card title="Queries" actions={<Button onClick={() => createMutation.mutate({ text })}>Create Query</Button>}>
+    <Card
+      title="Queries"
+      actions={<Button onClick={() => createMutation.mutate({ text })}>Create Query</Button>}
+    >
       <div className="mb-3 max-w-lg">
-        <Input placeholder="Query text" value={text} onChange={(e) => setText(e.target.value)} />
+        <Input placeholder="Query text" value={text} onChange={e => setText(e.target.value)} />
       </div>
-      {isLoading ? <p className="text-sm text-gray-500">Loading...</p> : (
+      {isLoading ? (
+        <p className="text-sm text-gray-500">Loading...</p>
+      ) : (
         <ul className="space-y-2">
-          {rows.map((item) => (
-            <li key={item.id} className="flex items-center justify-between rounded border border-gray-200 p-3 text-sm">
+          {rows.map(item => (
+            <li
+              key={item.id}
+              className="flex items-center justify-between rounded border border-gray-200 p-3 text-sm"
+            >
               <span>{item.text || item.queryText || item.id}</span>
-              <Button className="bg-red-600 hover:bg-red-700" onClick={() => window.confirm('Delete query?') && removeMutation.mutate(item.id)}>Delete</Button>
+              <Button
+                className="bg-red-600 hover:bg-red-700"
+                onClick={() => window.confirm('Delete query?') && removeMutation.mutate(item.id)}
+              >
+                Delete
+              </Button>
             </li>
           ))}
         </ul>
