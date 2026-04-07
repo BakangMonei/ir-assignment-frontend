@@ -16,6 +16,43 @@ export function DataSourcePage() {
   const queryClient = useQueryClient();
   const [selectedFile, setSelectedFile] = useState(null);
   const [resultMessage, setResultMessage] = useState('');
+  const [filePreview, setFilePreview] = useState('');
+  const [fileMeta, setFileMeta] = useState(null);
+
+  const loadPreview = file => {
+    if (!file) {
+      setFilePreview('');
+      setFileMeta(null);
+      return;
+    }
+
+    setFileMeta({
+      name: file.name,
+      type: file.type || 'unknown',
+      sizeKb: (file.size / 1024).toFixed(1),
+    });
+
+    const isTextLike =
+      file.type.includes('text') ||
+      file.type.includes('xml') ||
+      file.name.endsWith('.txt') ||
+      file.name.endsWith('.xml');
+
+    if (!isTextLike) {
+      setFilePreview('Preview unavailable for this file type. You can still upload it.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = event => {
+      const content = String(event.target?.result || '');
+      setFilePreview(content.slice(0, 1500) || 'File is empty.');
+    };
+    reader.onerror = () => {
+      setFilePreview('Unable to read file content preview.');
+    };
+    reader.readAsText(file);
+  };
 
   const cisiMutation = useMutation({
     mutationFn: importCisi,
@@ -87,7 +124,11 @@ export function DataSourcePage() {
               className="mt-3 block w-full text-sm"
               type="file"
               accept={ACCEPTED_TYPES}
-              onChange={e => setSelectedFile(e.target.files?.[0] || null)}
+              onChange={e => {
+                const file = e.target.files?.[0] || null;
+                setSelectedFile(file);
+                loadPreview(file);
+              }}
             />
             <div className="mt-3">
               <Button
@@ -97,6 +138,25 @@ export function DataSourcePage() {
                 Upload File
               </Button>
             </div>
+            {fileMeta && (
+              <div className="mt-4 rounded border border-gray-700 bg-gray-900/60 p-3 text-xs text-gray-300">
+                <p>
+                  <span className="font-semibold">Selected:</span> {fileMeta.name}
+                </p>
+                <p>
+                  <span className="font-semibold">Type:</span> {fileMeta.type}
+                </p>
+                <p>
+                  <span className="font-semibold">Size:</span> {fileMeta.sizeKb} KB
+                </p>
+                <div className="mt-2">
+                  <p className="mb-1 font-semibold">Content preview (first part):</p>
+                  <pre className="max-h-44 overflow-auto rounded border border-gray-700 bg-gray-800 p-2 text-[11px]">
+                    {filePreview || 'Preparing preview...'}
+                  </pre>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </Card>

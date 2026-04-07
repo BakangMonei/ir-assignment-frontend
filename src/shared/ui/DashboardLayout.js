@@ -16,26 +16,33 @@ import { usePlatformReadiness } from '../hooks/usePlatformReadiness';
 import { useState } from 'react';
 
 const links = [
-  { to: '/data-source', label: 'Data Source', icon: Database },
+  { to: '/data-source', label: 'Step A: Data Source', icon: Database },
+  { to: '/indexing', label: 'Step B: Indexing', icon: Activity },
+  { to: '/search', label: 'Step C: Search', icon: Search },
+  { to: '/results', label: 'Step D: Results', icon: Database },
+  { to: '/evaluation', label: 'Step E: Evaluation', icon: BarChart3 },
+  { to: '/analytics', label: 'Step F: Analytics', icon: BarChart3 },
   { to: '/documents', label: 'Documents', icon: FileText },
-  { to: '/search', label: 'Search', icon: Search },
   { to: '/queries', label: 'Queries', icon: SlidersHorizontal },
-  { to: '/results', label: 'Results', icon: Database },
-  { to: '/indexing', label: 'Indexing', icon: Activity },
-  { to: '/evaluation', label: 'Evaluation', icon: BarChart3 },
-  { to: '/analytics', label: 'Analytics', icon: BarChart3 },
   { to: '/experiments', label: 'Experiments', icon: Beaker },
   { to: '/settings', label: 'Settings', icon: Settings },
 ];
 
 export function DashboardLayout({ children }) {
   const readiness = usePlatformReadiness();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 md:flex">
+      <button
+        className="fixed left-4 top-4 z-50 rounded-full border border-cyan-400/50 bg-slate-900/90 p-3 text-cyan-200 shadow-[0_0_25px_rgba(34,211,238,0.25)] backdrop-blur transition hover:border-cyan-300 hover:text-cyan-100"
+        onClick={() => setCollapsed(v => !v)}
+        aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+      >
+        {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+      </button>
       <aside
-        className={`w-full border-b border-cyan-500/20 bg-slate-950/90 p-4 transition-all md:border-b-0 md:border-r ${collapsed ? 'md:w-20' : 'md:w-72'}`}
+        className={`w-full border-b border-cyan-500/20 bg-slate-950/90 p-4 pt-16 transition-all md:border-b-0 md:border-r ${collapsed ? 'md:w-20' : 'md:w-80'}`}
       >
         <div className="mb-4 flex items-center justify-between">
           {!collapsed && (
@@ -43,13 +50,6 @@ export function DashboardLayout({ children }) {
               IR Platform
             </h1>
           )}
-          <button
-            className="rounded-md border border-slate-700 bg-slate-900/70 p-2 text-slate-300 hover:border-cyan-400/50 hover:text-cyan-200"
-            onClick={() => setCollapsed(v => !v)}
-            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-          </button>
         </div>
         <nav className="grid grid-cols-2 gap-2 md:grid-cols-1">
           {links.map(({ to, label, icon: Icon }) => (
