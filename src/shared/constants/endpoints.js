@@ -12,6 +12,14 @@ function normalizeApiBase(raw) {
 
 export const API_BASE_URL = normalizeApiBase(process.env.REACT_APP_API_BASE_URL);
 
+/**
+ * Controllers under `/evaluation/run` are on the servlet context root (e.g. `http://host:8080/evaluation/run`),
+ * not under `/api`. Use with getBackendRootOrigin() for POST run; GET metrics/PR curve stay under `/api`.
+ */
+export function getBackendRootOrigin() {
+  return API_BASE_URL.replace(/\/api\/?$/i, '');
+}
+
 export const ENDPOINTS = {
   documents: '/documents',
   documentsBulk: '/documents/bulk',
@@ -40,9 +48,15 @@ export const ENDPOINTS = {
   /** POST JSON body (SearchRequestDTO): same Lucene index as GET /search; uses applyLengthNormalization. */
   irSearch: '/ir/search',
   searchExpand: '/search/expand',
-  evaluationRun: '/evaluation/run',
+  /** GET — ApiResponse.data = EvaluationMetrics */
   evaluationMetrics: '/evaluation/metrics',
+  /** GET — ApiResponse.data = number[][] ([precision, recall] per point) */
   evaluationPRCurve: '/evaluation/pr-curve',
+  /**
+   * GET — ApiAnalyticsController (same IRPlatformService stats as legacy GET /analytics/… on the root).
+   * Response: ApiResponse envelope; http client unwraps `data`.
+   */
   analyticsTermDistribution: '/analytics/term-distribution',
+  /** GET — ApiResponse; `irPlatformService` Zipf stats, message e.g. "Zipf analysis". */
   analyticsZipf: '/analytics/zipf',
 };
