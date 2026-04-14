@@ -1,5 +1,16 @@
-/** Default includes /api; override with REACT_APP_API_BASE_URL (e.g. http://localhost:8080/api). */
-export const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api';
+/**
+ * Single origin for axios; paths below are relative to this base.
+ * Ensures `/queries` and `/results` call `GET /api/queries` and `GET /api/results` (ApiQueriesController,
+ * ApiResultsController — same IRPlatformService behavior as non-prefixed routes on the server).
+ * You may set `REACT_APP_API_BASE_URL=http://localhost:8080` (no `/api`); it is normalized to `.../api`.
+ */
+function normalizeApiBase(raw) {
+  const trimmed = (raw || 'http://localhost:8080/api').replace(/\/+$/, '');
+  if (/\/api$/i.test(trimmed)) return trimmed;
+  return `${trimmed}/api`;
+}
+
+export const API_BASE_URL = normalizeApiBase(process.env.REACT_APP_API_BASE_URL);
 
 export const ENDPOINTS = {
   documents: '/documents',
@@ -7,7 +18,9 @@ export const ENDPOINTS = {
   documentsUpload: '/documents/upload',
   uploadCisi: '/upload/cisi',
   uploadPubmed: '/upload/pubmed',
+  /** Resolved as `{API_BASE_URL}/queries` → `/api/queries` when base ends with `/api`. */
   queries: '/queries',
+  /** Resolved as `{API_BASE_URL}/results` → `/api/results` when base ends with `/api`. */
   results: '/results',
   indexBuild: '/index/build',
   indexStatus: '/index/status',

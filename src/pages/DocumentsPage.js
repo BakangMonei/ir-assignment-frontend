@@ -34,7 +34,8 @@ function getPaginationMeta(raw, rowCount, pageIndex, pageSize) {
       ? Math.max(0, Number(meta.totalPages))
       : null;
   const totalPages =
-    apiTotalPages != null      ? apiTotalPages
+    apiTotalPages != null
+      ? apiTotalPages
       : totalElements != null && Number.isFinite(totalElements) && pageSize > 0
         ? Math.max(1, Math.ceil(totalElements / pageSize))
         : null;
@@ -242,12 +243,14 @@ export function DocumentsPage() {
                     </>
                   ) : (
                     <>
-                      Page{' '}
-                      <span className="font-medium text-slate-200">{filters.page + 1}</span>
+                      Page <span className="font-medium text-slate-200">{filters.page + 1}</span>
                       {pagination.totalPages != null && (
                         <>
                           {' '}
-                          of <span className="font-medium text-slate-200">{pagination.totalPages}</span>
+                          of{' '}
+                          <span className="font-medium text-slate-200">
+                            {pagination.totalPages}
+                          </span>
                         </>
                       )}
                       <span className="text-slate-500">
