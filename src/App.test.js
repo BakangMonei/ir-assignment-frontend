@@ -13,5 +13,5 @@ test('renders app shell title', () => {
       </MemoryRouter>
     </QueryClientProvider>
   );
-  expect(screen.getByText(/IR Platform/i)).toBeInTheDocument();
+  expect(screen.getByTitle('Step A: Data Source')).toBeInTheDocument();
 });

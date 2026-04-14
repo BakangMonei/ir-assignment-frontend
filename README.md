@@ -21,7 +21,7 @@ The app enforces readiness:
 
 - Node.js 18+ (or latest LTS)
 - npm
-- Backend running at `http://localhost:8080`
+- Backend running at `http://localhost:8080/api` (Spring API prefix; host/port may differ)
 
 ## 3) Setup and run
 
@@ -36,8 +36,10 @@ npm install
 Create `.env`:
 
 ```env
-REACT_APP_API_BASE_URL=http://localhost:8080
+REACT_APP_API_BASE_URL=http://localhost:8080/api
 ```
+
+If your server exposes routes under a different base path, set this to that full prefix (no trailing slash).
 
 ### Start dev server
 
@@ -61,9 +63,20 @@ npm test -- --watch=false --watchman=false
 
 The app prefers modern endpoints for core workflows, with legacy fallback adapters for import/upload.
 
-### Preferred modern endpoints
+### API base (`REACT_APP_API_BASE_URL`)
 
-- Documents: `/documents`
+Default in code is `http://localhost:8080/api`. All paths below are relative to that base.
+
+### Documents and uploads
+
+- `GET/POST /documents` — CRUD list/create
+- `PUT /documents/{id}` — update (send full document shape where required, e.g. title + content)
+- `POST /documents/bulk` — multipart `file` + `dataset` (`CISI` | `PUBMED`) + optional tokenizer/ranking fields
+- `POST /documents/upload` — multipart `file` only; response `{ message, documentCount }`
+- `POST /upload/cisi`, `POST /upload/pubmed` — dataset-specific multipart uploads
+
+### Other preferred endpoints
+
 - Queries: `/queries`
 - Results: `/results`
 - Indexing: `/index/build`, `/index/status`
@@ -71,11 +84,10 @@ The app prefers modern endpoints for core workflows, with legacy fallback adapte
 - Evaluation: `/evaluation/run`, `/evaluation/metrics`, `/evaluation/pr-curve`
 - Analytics: `/analytics/term-distribution`, `/analytics/zipf`
 
-### Legacy fallback endpoints
+### Server-side corpus import (optional `filePath` query)
 
-- `POST /api/index/import/cisi`
-- `POST /api/index/import/pubmed`
-- `POST /api/documents/upload`
+- `POST /index/import/cisi`
+- `POST /index/import/pubmed`
 
 ## 5) Full operator manual (step-by-step)
 

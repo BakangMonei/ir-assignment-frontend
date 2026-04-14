@@ -13,7 +13,7 @@ http.interceptors.request.use(config => {
       '[API Request]',
       config.method?.toUpperCase(),
       config.url,
-      config.params || config.data
+      config.params ?? config.data ?? '(none)'
     );
   }
   return config;
@@ -35,7 +35,14 @@ http.interceptors.response.use(
 
     return payload?.data ?? payload;
   },
-  error => Promise.reject(error)
+  error => {
+    if (process.env.NODE_ENV === 'development' && error?.response) {
+      const { status, data } = error.response;
+      // eslint-disable-next-line no-console
+      console.error('[API Error]', error.config?.method?.toUpperCase(), error.config?.url, status, data);
+    }
+    return Promise.reject(error);
+  }
 );
 
 export { http };

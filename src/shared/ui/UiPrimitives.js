@@ -18,6 +18,15 @@ export function Card({ title, children, actions }) {
   );
 }
 
+export function Spinner({ className = 'h-4 w-4 border-2' }) {
+  return (
+    <span
+      className={`inline-block shrink-0 animate-spin rounded-full border-cyan-200/30 border-t-cyan-100 ${className}`}
+      aria-hidden
+    />
+  );
+}
+
 export function Button({ children, className = '', ...props }) {
   return (
     <button

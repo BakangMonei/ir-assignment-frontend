@@ -13,7 +13,7 @@ import { useDebouncedValue } from '../shared/hooks/useDebouncedValue';
 export function DocumentsPage() {
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState({ page: 0, size: 10, category: '', year: '' });
-  const [form, setForm] = useState({ title: '', category: '', year: '' });
+  const [form, setForm] = useState({ title: '', content: '', category: '', year: '' });
   const [selectedDoc, setSelectedDoc] = useState(null);
   const debouncedCategory = useDebouncedValue(filters.category);
   const debouncedYear = useDebouncedValue(filters.year);
@@ -28,7 +28,7 @@ export function DocumentsPage() {
     mutationFn: createDocument,
     onSuccess: () => {
       toast.success('Document saved');
-      setForm({ title: '', category: '', year: '' });
+      setForm({ title: '', content: '', category: '', year: '' });
       queryClient.invalidateQueries({ queryKey: ['documents'] });
     },
     onError: error => toast.error(getErrorMessage(error)),
@@ -52,13 +52,15 @@ export function DocumentsPage() {
         actions={
           <Button
             onClick={() => createMutation.mutate(form)}
-            disabled={!form.title?.trim() || !form.year || createMutation.isPending}
+            disabled={
+              !form.title?.trim() || !form.content?.trim() || !form.year || createMutation.isPending
+            }
           >
             Create
           </Button>
         }
       >
-        <div className="mb-3 grid gap-2 md:grid-cols-5">
+        <div className="mb-3 grid gap-2 md:grid-cols-2">
           <Input
             placeholder="Title"
             value={form.title}
@@ -69,12 +71,20 @@ export function DocumentsPage() {
             value={form.category}
             onChange={e => setForm(v => ({ ...v, category: e.target.value }))}
           />
+          <textarea
+            className="min-h-[88px] w-full rounded-md border border-slate-600 bg-slate-900/70 px-3 py-2 text-sm text-slate-100 outline-none ring-cyan-300/30 placeholder:text-slate-400 focus:border-cyan-300 focus:ring-2 md:col-span-2"
+            placeholder="Content (required by API)"
+            value={form.content}
+            onChange={e => setForm(v => ({ ...v, content: e.target.value }))}
+          />
           <Input
             placeholder="Year"
             value={form.year}
             type="number"
             onChange={e => setForm(v => ({ ...v, year: Number(e.target.value) }))}
           />
+        </div>
+        <div className="mb-3 grid gap-2 md:grid-cols-2">
           <Input
             placeholder="Filter category"
             value={filters.category}
