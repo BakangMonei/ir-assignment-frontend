@@ -194,8 +194,13 @@ export function DataSourcePage() {
               Optional: set tokenizer, stemming, ranking, and length normalization for bulk indexing
               (same fields as the standalone IR UI).
             </li>
-            <li>Go to <strong className="text-cyan-200">Indexing</strong> and build the Lucene index.</li>
-            <li>Use <strong className="text-cyan-200">Search</strong> or <strong className="text-cyan-200">Experiments</strong> for runs and exports.</li>
+            <li>
+              Go to <strong className="text-cyan-200">Indexing</strong> and build the Lucene index.
+            </li>
+            <li>
+              Use <strong className="text-cyan-200">Search</strong> or{' '}
+              <strong className="text-cyan-200">Experiments</strong> for runs and exports.
+            </li>
           </ol>
         </Card>
       )}

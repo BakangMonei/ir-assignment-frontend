@@ -8,7 +8,7 @@ import {
   getDocuments,
   updateDocument,
 } from '../features/documents/api/documentsApi';
-import { Button, Card, EmptyState, Input } from '../shared/ui/UiPrimitives';
+import { Button, Card, EmptyState, Input, Select } from '../shared/ui/UiPrimitives';
 import { getErrorMessage } from '../shared/utils/errorUtils';
 import { useDebouncedValue } from '../shared/hooks/useDebouncedValue';
 
@@ -20,9 +20,51 @@ function normalizeDocumentRows(data) {
   return [];
 }
 
+/** Spring `Page` or similar; falls back when the API returns a bare array. */
+function getPaginationMeta(raw, rowCount, pageIndex, pageSize) {
+  const meta = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+  const totalElements =
+    meta.totalElements != null
+      ? Number(meta.totalElements)
+      : meta.total != null
+        ? Number(meta.total)
+        : null;
+  const apiTotalPages =
+    meta.totalPages != null && Number.isFinite(Number(meta.totalPages))
+      ? Math.max(0, Number(meta.totalPages))
+      : null;
+  const totalPages =
+    apiTotalPages != null      ? apiTotalPages
+      : totalElements != null && Number.isFinite(totalElements) && pageSize > 0
+        ? Math.max(1, Math.ceil(totalElements / pageSize))
+        : null;
+
+  const startItem = rowCount === 0 ? 0 : pageIndex * pageSize + 1;
+  const endItem = pageIndex * pageSize + rowCount;
+
+  const hasNext =
+    meta.last === false ||
+    (meta.last !== true &&
+      (totalPages != null ? pageIndex < totalPages - 1 : rowCount >= pageSize));
+
+  const hasPrev = meta.first === false || (meta.first !== true && pageIndex > 0);
+
+  const canGoLast = totalPages != null && totalPages > 0 && pageIndex < totalPages - 1;
+
+  return {
+    totalElements: Number.isFinite(totalElements) ? totalElements : null,
+    totalPages,
+    startItem,
+    endItem,
+    hasNext,
+    hasPrev,
+    canGoLast,
+  };
+}
+
 export function DocumentsPage() {
   const queryClient = useQueryClient();
-  const [filters, setFilters] = useState({ page: 0, size: 10, category: '', year: '' });
+  const [filters, setFilters] = useState({ page: 0, size: 20, category: '', year: '' });
   const [form, setForm] = useState({ title: '', content: '', category: '', year: '' });
   const [selectedDoc, setSelectedDoc] = useState(null);
   const debouncedCategory = useDebouncedValue(filters.category);
@@ -65,6 +107,13 @@ export function DocumentsPage() {
   });
 
   const rows = useMemo(() => normalizeDocumentRows(data), [data]);
+
+  const pagination = useMemo(
+    () => getPaginationMeta(data, rows.length, filters.page, filters.size),
+    [data, rows.length, filters.page, filters.size]
+  );
+
+  const showTableFooter = !isLoading && (rows.length > 0 || filters.page > 0);
 
   return (
     <div className="space-y-4">
@@ -121,65 +170,160 @@ export function DocumentsPage() {
 
         {isLoading ? (
           <p className="text-sm text-slate-400">Loading documents…</p>
-        ) : rows.length === 0 ? (
+        ) : rows.length === 0 && filters.page === 0 ? (
           <EmptyState
             title="No documents found"
             description="Try changing filters or create a new document."
           />
         ) : (
-          <div className="overflow-auto rounded-md border border-slate-700">
-            <table className="min-w-full text-sm text-slate-200">
-              <thead className="bg-slate-900/90">
-                <tr className="text-left text-slate-400">
-                  <th className="px-3 py-2">ID</th>
-                  <th>Title</th>
-                  <th>Category</th>
-                  <th>Year</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map(doc => (
-                  <tr
-                    key={doc.id}
-                    className="cursor-pointer border-t border-slate-700/80 hover:bg-slate-800/50"
-                    onClick={() => setSelectedDoc(doc)}
-                  >
-                    <td className="px-3 py-2">{doc.id}</td>
-                    <td>{doc.title}</td>
-                    <td>{doc.category}</td>
-                    <td>{doc.year}</td>
-                    <td>
-                      <Button
-                        className="bg-red-600 hover:bg-red-700"
-                        onClick={e => {
-                          e.stopPropagation();
-                          if (window.confirm('Delete document?')) deleteMutation.mutate(doc.id);
-                        }}
-                      >
-                        Delete
-                      </Button>
-                    </td>
+          <div className="overflow-hidden rounded-md border border-slate-700">
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm text-slate-200">
+                <thead className="bg-slate-900/90">
+                  <tr className="text-left text-slate-400">
+                    <th className="px-3 py-2">ID</th>
+                    <th>Title</th>
+                    <th>Category</th>
+                    <th>Year</th>
+                    <th />
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {rows.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-3 py-8 text-center text-slate-500">
+                        No rows on this page. Go back to the previous page.
+                      </td>
+                    </tr>
+                  ) : (
+                    rows.map(doc => (
+                      <tr
+                        key={doc.id}
+                        className="cursor-pointer border-t border-slate-700/80 hover:bg-slate-800/50"
+                        onClick={() => setSelectedDoc(doc)}
+                      >
+                        <td className="px-3 py-2">{doc.id}</td>
+                        <td>{doc.title}</td>
+                        <td>{doc.category}</td>
+                        <td>{doc.year}</td>
+                        <td>
+                          <Button
+                            className="bg-red-600 hover:bg-red-700"
+                            onClick={e => {
+                              e.stopPropagation();
+                              if (window.confirm('Delete document?')) deleteMutation.mutate(doc.id);
+                            }}
+                          >
+                            Delete
+                          </Button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {showTableFooter && (
+              <div
+                className="flex flex-col gap-3 border-t border-slate-700 bg-slate-950/70 px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+                role="navigation"
+                aria-label="Documents pagination"
+              >
+                <div className="text-xs text-slate-400">
+                  {pagination.totalElements != null ? (
+                    <>
+                      Showing{' '}
+                      <span className="font-medium text-slate-200">
+                        {pagination.startItem}–{pagination.endItem}
+                      </span>{' '}
+                      of{' '}
+                      <span className="font-medium text-slate-200">{pagination.totalElements}</span>
+                    </>
+                  ) : (
+                    <>
+                      Page{' '}
+                      <span className="font-medium text-slate-200">{filters.page + 1}</span>
+                      {pagination.totalPages != null && (
+                        <>
+                          {' '}
+                          of <span className="font-medium text-slate-200">{pagination.totalPages}</span>
+                        </>
+                      )}
+                      <span className="text-slate-500">
+                        {' '}
+                        · {rows.length} {rows.length === 1 ? 'row' : 'rows'}
+                      </span>
+                    </>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="flex items-center gap-2 text-xs text-slate-400">
+                    Per page
+                    <Select
+                      aria-label="Rows per page"
+                      className="w-auto min-w-[4.5rem] py-1.5 text-xs"
+                      value={String(filters.size)}
+                      onChange={e =>
+                        setFilters(v => ({
+                          ...v,
+                          page: 0,
+                          size: Number(e.target.value) || 20,
+                        }))
+                      }
+                    >
+                      {[5, 10, 20, 25, 50, 100].map(n => (
+                        <option key={n} value={String(n)}>
+                          {n}
+                        </option>
+                      ))}
+                    </Select>
+                  </label>
+                  <div className="flex flex-wrap gap-1">
+                    <Button
+                      type="button"
+                      className="bg-slate-800 px-2 py-1.5 text-xs hover:bg-slate-700"
+                      disabled={!pagination.hasPrev}
+                      onClick={() => setFilters(v => ({ ...v, page: 0 }))}
+                    >
+                      First
+                    </Button>
+                    <Button
+                      type="button"
+                      className="bg-slate-800 px-2 py-1.5 text-xs hover:bg-slate-700"
+                      disabled={!pagination.hasPrev}
+                      onClick={() => setFilters(v => ({ ...v, page: Math.max(0, v.page - 1) }))}
+                    >
+                      Prev
+                    </Button>
+                    <Button
+                      type="button"
+                      className="bg-slate-800 px-2 py-1.5 text-xs hover:bg-slate-700"
+                      disabled={!pagination.hasNext}
+                      onClick={() => setFilters(v => ({ ...v, page: v.page + 1 }))}
+                    >
+                      Next
+                    </Button>
+                    <Button
+                      type="button"
+                      className="bg-slate-800 px-2 py-1.5 text-xs hover:bg-slate-700"
+                      disabled={!pagination.canGoLast}
+                      onClick={() =>
+                        setFilters(v => ({
+                          ...v,
+                          page: Math.max(0, (pagination.totalPages ?? 1) - 1),
+                        }))
+                      }
+                    >
+                      Last
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
-
-        <div className="mt-3 flex items-center justify-between">
-          <p className="text-xs text-slate-500">Page {filters.page + 1}</p>
-          <div className="flex gap-2">
-            <Button
-              className="bg-slate-700 hover:bg-slate-800"
-              disabled={filters.page === 0}
-              onClick={() => setFilters(v => ({ ...v, page: Math.max(v.page - 1, 0) }))}
-            >
-              Prev
-            </Button>
-            <Button onClick={() => setFilters(v => ({ ...v, page: v.page + 1 }))}>Next</Button>
-          </div>
-        </div>
       </Card>
 
       <DocumentDetailModal

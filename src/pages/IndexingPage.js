@@ -192,16 +192,19 @@ export function IndexingPage() {
 
       <Card title="Server index configuration (PUT)">
         <p className="mb-3 text-sm text-slate-400">
-          Persists tokenizer, stemming, ranking, and normalization on the backend (same routes as the
-          standalone IR UI).
+          These routes update the backend{' '}
+          <strong className="text-slate-200">IndexAnalysisSettings</strong> and related flags so the
+          main Lucene index uses the same tokenizer/stemmer at write time and in{' '}
+          <code className="text-cyan-300/90">QueryParser</code>. Document services keep repository
+          settings in sync. After changing <strong className="text-slate-200">tokenizer</strong> or{' '}
+          <strong className="text-slate-200">stemming</strong>, run{' '}
+          <strong className="text-cyan-200">Build / rebuild index</strong> so existing segments
+          match the new analysis chain.
         </p>
         {configQuery.isLoading ? (
           <Spinner />
         ) : (
-          <IndexConfigForm
-            initial={configQuery.data}
-            onRefresh={() => configQuery.refetch()}
-          />
+          <IndexConfigForm initial={configQuery.data} onRefresh={() => configQuery.refetch()} />
         )}
       </Card>
 
@@ -219,8 +222,7 @@ export function IndexingPage() {
 }
 
 function IndexConfigForm({ initial, onRefresh }) {
-  const tokenizerType =
-    initial?.tokenizer?.type ?? initial?.tokenizer?.tokenizerType ?? 'standard';
+  const tokenizerType = initial?.tokenizer?.type ?? initial?.tokenizer?.tokenizerType ?? 'standard';
   const useStemming = Boolean(initial?.stemming?.enabled ?? initial?.stemming?.useStemming);
   const rankingAlgorithm =
     initial?.ranking?.algorithm ?? initial?.ranking?.rankingAlgorithm ?? 'bm25';
@@ -231,7 +233,9 @@ function IndexConfigForm({ initial, onRefresh }) {
   const patchTokenizer = async type => {
     try {
       await putTokenizerConfig({ type });
-      toast.success('Tokenizer updated');
+      toast.success(
+        'Tokenizer updated. Rebuild the index for analysis changes to apply to stored documents.'
+      );
       onRefresh();
     } catch (e) {
       toast.error(getErrorMessage(e, 'Tokenizer update failed'));
@@ -241,7 +245,9 @@ function IndexConfigForm({ initial, onRefresh }) {
   const patchStemming = async enabled => {
     try {
       await putStemmingConfig({ enabled });
-      toast.success('Stemming updated');
+      toast.success(
+        'Stemming updated. Rebuild the index so token streams stay consistent with the corpus.'
+      );
       onRefresh();
     } catch (e) {
       toast.error(getErrorMessage(e, 'Stemming update failed'));

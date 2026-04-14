@@ -114,15 +114,21 @@ export function SearchPage() {
           value={params.year}
           onChange={e => setParams(v => ({ ...v, year: e.target.value }))}
         />
-        <div className="flex items-center gap-3 rounded-md border border-slate-700 px-3 py-2">
+        <div className="flex flex-col gap-1 rounded-md border border-slate-700 px-3 py-2">
           <label className="text-sm text-slate-200">
             <input
               type="checkbox"
               checked={params.lengthNorm}
               onChange={e => setParams(v => ({ ...v, lengthNorm: e.target.checked }))}
             />{' '}
-            Length norm
+            Length normalization
           </label>
+          <p className="text-xs text-slate-500">
+            For <span className="text-slate-400">bm25</span>, the API maps this to BM25Similarity
+            length norm (e.g. <code className="text-cyan-600/90">b</code> on vs off). Also sent as{' '}
+            <code className="text-cyan-600/90">applyLengthNormalization</code> for DTO-style
+            clients.
+          </p>
         </div>
       </div>
       <div className="mb-4 grid gap-2 md:grid-cols-4">
@@ -227,9 +233,7 @@ export function SearchPage() {
               <div className="font-medium">
                 {item.title || item.documentId || `Result ${idx + 1}`}
               </div>
-              {item.content && (
-                <p className="mt-1 line-clamp-3 text-slate-400">{item.content}</p>
-              )}
+              {item.content && <p className="mt-1 line-clamp-3 text-slate-400">{item.content}</p>}
               <div className="mt-1 text-slate-500">
                 Score:{' '}
                 {item.score != null && !Number.isNaN(Number(item.score))

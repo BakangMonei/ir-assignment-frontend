@@ -120,7 +120,9 @@ export function ExperimentsPage() {
     onSuccess: body => {
       const rows = body?.comparisons?.length ?? body?.rows?.length ?? 0;
       toast.success(
-        rows ? `Benchmark finished (${rows} configuration rows). Full JSON logged to console.` : 'Benchmark finished.'
+        rows
+          ? `Benchmark finished (${rows} configuration rows). Full JSON logged to console.`
+          : 'Benchmark finished.'
       );
       // eslint-disable-next-line no-console
       console.log('CISI benchmark result', body);
@@ -164,8 +166,12 @@ export function ExperimentsPage() {
     <div className="space-y-4">
       <Card title="CISI batch evaluation (backend)">
         <p className="mb-3 text-sm text-slate-400">
-          Mirrors the standalone IR UI: full grid over tokenizers, stemming, and ranking models, plus a
-          quick MAP run on default CISI query and relevance files on the server.
+          Backend <code className="text-cyan-600/90">ApiExperimentController</code>: full CISI grid
+          (tokenizers × stemming × models including <strong className="text-slate-200">bm25</strong>
+          ) and UTF-8 CISI.QRY / CISI.REL evaluation. GET search still sends{' '}
+          <code className="text-cyan-600/90">lengthNorm</code> and{' '}
+          <code className="text-cyan-600/90">applyLengthNormalization</code> together when you run
+          manual experiments below.
         </p>
         <div className="flex flex-wrap gap-2">
           <Button

@@ -60,9 +60,7 @@ export function ConfirmDialog({
                   <button
                     type="button"
                     className={`rounded-md px-4 py-2 text-sm font-medium text-white ${
-                      danger
-                        ? 'bg-red-600 hover:bg-red-500'
-                        : 'bg-cyan-600 hover:bg-cyan-500'
+                      danger ? 'bg-red-600 hover:bg-red-500' : 'bg-cyan-600 hover:bg-cyan-500'
                     }`}
                     onClick={async () => {
                       try {

@@ -24,6 +24,8 @@ export const ENDPOINTS = {
   experimentsRunCisi: '/experiments/run',
   experimentsDatasetEval: '/experiments/dataset-eval',
   search: '/search',
+  /** POST JSON body (SearchRequestDTO): same Lucene index as GET /search; uses applyLengthNormalization. */
+  irSearch: '/ir/search',
   searchExpand: '/search/expand',
   evaluationRun: '/evaluation/run',
   evaluationMetrics: '/evaluation/metrics',

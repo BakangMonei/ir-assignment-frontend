@@ -18,7 +18,14 @@ export function normalizeSearchRows(raw) {
 export function extractSearchMeta(raw) {
   const rows = normalizeSearchRows(raw);
   if (!raw || typeof raw !== 'object') {
-    return { rows, totalHits: rows.length, latencyMs: null, precision: null, recall: null, f1Score: null };
+    return {
+      rows,
+      totalHits: rows.length,
+      latencyMs: null,
+      precision: null,
+      recall: null,
+      f1Score: null,
+    };
   }
   return {
     rows,

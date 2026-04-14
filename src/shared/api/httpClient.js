@@ -40,7 +40,13 @@ http.interceptors.response.use(
     if (process.env.NODE_ENV === 'development' && error?.response) {
       const { status, data } = error.response;
       // eslint-disable-next-line no-console
-      console.error('[API Error]', error.config?.method?.toUpperCase(), error.config?.url, status, data);
+      console.error(
+        '[API Error]',
+        error.config?.method?.toUpperCase(),
+        error.config?.url,
+        status,
+        data
+      );
     }
     return Promise.reject(error);
   }
