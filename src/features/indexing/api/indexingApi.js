@@ -1,5 +1,6 @@
 import { http } from '../../../shared/api/httpClient';
-import { ENDPOINTS } from '../../../shared/constants/endpoints';
+import { requestWithAliases } from '../../../shared/api/apiUtils';
+import { ENDPOINTS, ENDPOINT_ALIASES } from '../../../shared/constants/endpoints';
 
 const CONFIG_KEYS = [
   ['tokenizer', ENDPOINTS.indexConfigTokenizer],
@@ -9,11 +10,11 @@ const CONFIG_KEYS = [
 ];
 
 export function buildIndex() {
-  return http.post(ENDPOINTS.indexBuild);
+  return requestWithAliases({ method: 'post', paths: ENDPOINT_ALIASES.indexBuild });
 }
 
 export function getIndexStatus() {
-  return http.get(ENDPOINTS.indexStatus);
+  return requestWithAliases({ method: 'get', paths: ENDPOINT_ALIASES.indexStatus });
 }
 
 export function getIndexStats() {

@@ -4,11 +4,11 @@ import { SearchPage } from '../../pages/SearchPage';
 import { IndexingPage } from '../../pages/IndexingPage';
 import { EvaluationPage } from '../../pages/EvaluationPage';
 import { AnalyticsPage } from '../../pages/AnalyticsPage';
-import { CrudPlaceholderPage } from '../../pages/CrudPlaceholderPage';
 import { QueriesPage } from '../../pages/QueriesPage';
 import { ResultsPage } from '../../pages/ResultsPage';
 import { DataSourcePage } from '../../pages/DataSourcePage';
 import { ExperimentsPage } from '../../pages/ExperimentsPage';
+import { SettingsPage } from '../../pages/SettingsPage';
 
 export function AppRouter() {
   return (
@@ -23,7 +23,7 @@ export function AppRouter() {
       <Route path="/evaluation" element={<EvaluationPage />} />
       <Route path="/analytics" element={<AnalyticsPage />} />
       <Route path="/experiments" element={<ExperimentsPage />} />
-      <Route path="/settings" element={<CrudPlaceholderPage title="Settings" />} />
+      <Route path="/settings" element={<SettingsPage />} />
     </Routes>
   );
 }

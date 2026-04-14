@@ -1,10 +1,6 @@
-import axios from 'axios';
-import { API_BASE_URL, ENDPOINTS } from '../../../shared/constants/endpoints';
-
-const legacy = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 30_000,
-});
+import { http } from '../../../shared/api/httpClient';
+import { requestWithAliases } from '../../../shared/api/apiUtils';
+import { ENDPOINTS, ENDPOINT_ALIASES } from '../../../shared/constants/endpoints';
 
 const multipartConfig = {
   headers: { 'Content-Type': 'multipart/form-data' },
@@ -28,21 +24,19 @@ export function inferDatasetFromFilename(filename) {
 const IMPORT_TIMEOUT_MS = 300_000;
 
 export function importCisi(filePath) {
-  return legacy
-    .post(ENDPOINTS.indexImportCisi, null, {
-      params: filePath ? { filePath } : {},
-      timeout: IMPORT_TIMEOUT_MS,
-    })
-    .then(r => r.data?.data ?? r.data);
+  return requestWithAliases({
+    method: 'post',
+    paths: [ENDPOINTS.indexImportCisi],
+    config: { params: filePath ? { filePath } : {}, timeout: IMPORT_TIMEOUT_MS },
+  });
 }
 
 export function importPubmed(filePath) {
-  return legacy
-    .post(ENDPOINTS.indexImportPubmed, null, {
-      params: filePath ? { filePath } : {},
-      timeout: IMPORT_TIMEOUT_MS,
-    })
-    .then(r => r.data?.data ?? r.data);
+  return requestWithAliases({
+    method: 'post',
+    paths: [ENDPOINTS.indexImportPubmed],
+    config: { params: filePath ? { filePath } : {}, timeout: IMPORT_TIMEOUT_MS },
+  });
 }
 
 /**
@@ -67,9 +61,7 @@ export async function bulkIndexDocumentsFromFile(file, options = {}) {
     formData.append('lengthNormalization', String(options.lengthNormalization));
   }
 
-  const raw = await legacy
-    .post(ENDPOINTS.documentsBulk, formData, multipartConfig)
-    .then(r => r.data?.data ?? r.data);
+  const raw = await http.post(ENDPOINTS.documentsBulk, formData, multipartConfig);
 
   const list = Array.isArray(raw) ? raw : [];
   const documentCount = list.length;
@@ -90,9 +82,7 @@ export async function uploadDocumentSimple(file) {
   const formData = new FormData();
   formData.append('file', file);
 
-  const raw = await legacy
-    .post(ENDPOINTS.documentsUpload, formData, multipartConfig)
-    .then(r => r.data?.data ?? r.data);
+  const raw = await http.post(ENDPOINTS.documentsUpload, formData, multipartConfig);
 
   if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
     return {
@@ -112,16 +102,42 @@ export async function uploadDocumentSimple(file) {
 export function uploadCisiFile(file) {
   const formData = new FormData();
   formData.append('file', file);
-  return legacy
-    .post(ENDPOINTS.uploadCisi, formData, multipartConfig)
-    .then(r => r.data?.data ?? r.data);
+  return http.post(ENDPOINTS.uploadCisi, formData, multipartConfig);
 }
 
 /** POST /upload/pubmed — PubMed XML or MEDLINE file. */
 export function uploadPubmedFile(file) {
   const formData = new FormData();
   formData.append('file', file);
-  return legacy
-    .post(ENDPOINTS.uploadPubmed, formData, multipartConfig)
-    .then(r => r.data?.data ?? r.data);
+  return http.post(ENDPOINTS.uploadPubmed, formData, multipartConfig);
+}
+
+function uploadWorkflowFile(file, aliases) {
+  const formData = new FormData();
+  formData.append('file', file);
+  return requestWithAliases({
+    method: 'post',
+    paths: aliases,
+    config: { data: formData, ...multipartConfig },
+  });
+}
+
+export function uploadQueriesFile(file) {
+  return uploadWorkflowFile(file, ENDPOINT_ALIASES.uploadQueries);
+}
+
+export function uploadRelevanceFile(file) {
+  return uploadWorkflowFile(file, ENDPOINT_ALIASES.uploadRelevance);
+}
+
+export function workflowUpload(file) {
+  return uploadWorkflowFile(file, ENDPOINT_ALIASES.workflowUpload);
+}
+
+export function getWorkflowStatus() {
+  return requestWithAliases({ method: 'get', paths: ENDPOINT_ALIASES.workflowStatus });
+}
+
+export function resetWorkflow() {
+  return requestWithAliases({ method: 'post', paths: ENDPOINT_ALIASES.workflowReset });
 }

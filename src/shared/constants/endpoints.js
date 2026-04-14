@@ -60,3 +60,28 @@ export const ENDPOINTS = {
   /** GET — ApiResponse; `irPlatformService` Zipf stats, message e.g. "Zipf analysis". */
   analyticsZipf: '/analytics/zipf',
 };
+
+export const ENDPOINT_ALIASES = {
+  workflowUpload: ['/workflow/upload', '/api/upload/cisi'],
+  workflowStatus: ['/workflow/status', '/api/index/status', '/index/status'],
+  workflowReset: ['/workflow/reset'],
+  uploadQueries: ['/api/upload/queries'],
+  uploadRelevance: ['/api/upload/relevance'],
+  indexBuild: ['/index/build', '/api/index/build'],
+  indexStatus: ['/index/status', '/api/index/status'],
+  search: ['/search', '/api/search', '/api/ir/search'],
+  searchExpand: ['/search/expand', '/api/search/expand'],
+  evaluationRun: ['/evaluation/run', '/api/ir/evaluate'],
+  evaluationMetrics: ['/evaluation/metrics', '/api/evaluation/metrics'],
+  evaluationPrCurve: ['/evaluation/pr-curve', '/api/evaluation/pr-curve'],
+  evaluationSearch: ['/api/evaluation/search'],
+  evaluationCompareTokenizers: ['/api/evaluation/compare/tokenizers'],
+  evaluationCompareStemming: ['/api/evaluation/compare/stemming'],
+  evaluationCompareRanking: ['/api/evaluation/compare/ranking'],
+  analyticsTermDistribution: ['/analytics/term-distribution', '/api/analytics/term-distribution'],
+  analyticsZipf: ['/analytics/zipf', '/api/analytics/zipf'],
+  experimentsRun: ['/experiments/run', '/api/experiments/run'],
+  experimentsDatasetEval: ['/experiments/dataset-eval', '/api/experiments/dataset-eval'],
+  experimentsVariantBuild: ['/experiments/variant/build'],
+  experimentsVariantSearch: ['/experiments/variant/search'],
+};

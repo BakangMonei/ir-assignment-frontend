@@ -1,12 +1,12 @@
-import { http } from '../../../shared/api/httpClient';
-import { ENDPOINTS } from '../../../shared/constants/endpoints';
+import { requestWithAliases } from '../../../shared/api/apiUtils';
+import { ENDPOINT_ALIASES } from '../../../shared/constants/endpoints';
 
 /** GET /api/analytics/term-distribution → ApiResponse.data (unwrapped). */
 export function getTermDistribution() {
-  return http.get(ENDPOINTS.analyticsTermDistribution);
+  return requestWithAliases({ method: 'get', paths: ENDPOINT_ALIASES.analyticsTermDistribution });
 }
 
 /** GET /api/analytics/zipf → ApiResponse.data (unwrapped). */
 export function getZipf() {
-  return http.get(ENDPOINTS.analyticsZipf);
+  return requestWithAliases({ method: 'get', paths: ENDPOINT_ALIASES.analyticsZipf });
 }

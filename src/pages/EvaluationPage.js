@@ -3,8 +3,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { toast } from 'react-toastify';
 import {
+  compareEvaluationBy,
   getEvaluationMetrics,
   getPRCurve,
+  runEvaluationSearch,
   runEvaluation,
 } from '../features/evaluation/api/evaluationApi';
 import { Button, Card, EmptyState, Input } from '../shared/ui/UiPrimitives';
@@ -20,6 +22,7 @@ export function EvaluationPage() {
   const queryClient = useQueryClient();
   const readiness = usePlatformReadiness();
   const [payload, setPayload] = useState({ relevantDocIds: '', retrievedDocIds: '' });
+  const [comparison, setComparison] = useState({ kind: 'tokenizer', data: null, error: '' });
 
   const metricsQuery = useQuery({
     queryKey: ['evaluation-metrics'],
@@ -40,6 +43,22 @@ export function EvaluationPage() {
       queryClient.invalidateQueries({ queryKey: ['evaluation-pr'] });
     },
     onError: error => toast.error(getErrorMessage(error, 'Evaluation run failed')),
+  });
+
+  const evaluationSearchMutation = useMutation({
+    mutationFn: params => runEvaluationSearch(params),
+    onError: error => toast.error(getErrorMessage(error, 'Evaluation search failed')),
+  });
+
+  const comparisonMutation = useMutation({
+    mutationFn: kind => compareEvaluationBy(kind),
+    onSuccess: (data, kind) => setComparison({ kind, data, error: '' }),
+    onError: error =>
+      setComparison(v => ({
+        ...v,
+        data: null,
+        error: getErrorMessage(error, 'Comparison failed'),
+      })),
   });
 
   const relevantList = payload.relevantDocIds
@@ -171,6 +190,42 @@ export function EvaluationPage() {
             </ResponsiveContainer>
           </div>
         )}
+      </Card>
+
+      <Card title="Comparison views">
+        <div className="mb-3 flex flex-wrap gap-2">
+          <Button
+            onClick={() => comparisonMutation.mutate('tokenizer')}
+            disabled={comparisonMutation.isPending}
+          >
+            Compare tokenizers
+          </Button>
+          <Button
+            className="bg-slate-700 hover:bg-slate-800"
+            onClick={() => comparisonMutation.mutate('stemming')}
+            disabled={comparisonMutation.isPending}
+          >
+            Compare stemming
+          </Button>
+          <Button
+            className="bg-indigo-600 hover:bg-indigo-700"
+            onClick={() => comparisonMutation.mutate('ranking')}
+            disabled={comparisonMutation.isPending}
+          >
+            Compare ranking
+          </Button>
+          <Button
+            className="bg-emerald-600 hover:bg-emerald-700"
+            onClick={() => evaluationSearchMutation.mutate({})}
+            disabled={evaluationSearchMutation.isPending}
+          >
+            Run evaluation search
+          </Button>
+        </div>
+        {comparison.error ? <p className="mb-2 text-sm text-rose-300">{comparison.error}</p> : null}
+        <pre className="max-h-56 overflow-auto rounded border border-slate-700 bg-slate-950/80 p-3 text-xs text-slate-300">
+          {JSON.stringify(comparison.data || evaluationSearchMutation.data || {}, null, 2)}
+        </pre>
       </Card>
     </div>
   );

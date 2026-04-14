@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
 import {
   bulkIndexDocumentsFromFile,
@@ -9,6 +9,11 @@ import {
   uploadCisiFile,
   uploadDocumentSimple,
   uploadPubmedFile,
+  uploadQueriesFile,
+  uploadRelevanceFile,
+  getWorkflowStatus,
+  resetWorkflow,
+  workflowUpload,
 } from '../features/datasource/api/datasourceApi';
 import { Button, Card, EmptyState, Select, Spinner } from '../shared/ui/UiPrimitives';
 import { getErrorMessage } from '../shared/utils/errorUtils';
@@ -35,6 +40,15 @@ export function DataSourcePage() {
   const [datasetMode, setDatasetMode] = useState('auto');
   const [cisiServerPath, setCisiServerPath] = useState('');
   const [pubmedServerPath, setPubmedServerPath] = useState('');
+  const [queryFile, setQueryFile] = useState(null);
+  const [relevanceFile, setRelevanceFile] = useState(null);
+
+  const workflowStatusQuery = useQuery({
+    queryKey: ['workflow-status'],
+    queryFn: getWorkflowStatus,
+    retry: 1,
+    refetchInterval: 10_000,
+  });
 
   const inferredDataset = useMemo(
     () => (selectedFile ? inferDatasetFromFilename(selectedFile.name) : ''),
@@ -166,13 +180,60 @@ export function DataSourcePage() {
     onError: error => toast.error(getErrorMessage(error, 'PubMed upload failed')),
   });
 
+  const workflowUploadMutation = useMutation({
+    mutationFn: file => workflowUpload(file),
+    onSuccess: data => {
+      setResultMessage(`Workflow upload completed. ${JSON.stringify(data || {})}`);
+      toast.success('Workflow upload succeeded');
+      workflowStatusQuery.refetch();
+    },
+    onError: error => toast.error(getErrorMessage(error, 'Workflow upload failed')),
+  });
+
+  const uploadQueriesMutation = useMutation({
+    mutationFn: file => uploadQueriesFile(file),
+    onSuccess: data => {
+      setPlatformState({ relevanceAvailable: true });
+      setResultMessage(`Queries uploaded. ${JSON.stringify(data || {})}`);
+      toast.success('Queries file uploaded');
+      workflowStatusQuery.refetch();
+    },
+    onError: error => toast.error(getErrorMessage(error, 'Queries upload failed')),
+  });
+
+  const uploadRelevanceMutation = useMutation({
+    mutationFn: file => uploadRelevanceFile(file),
+    onSuccess: data => {
+      setPlatformState({ relevanceAvailable: true });
+      setResultMessage(`Relevance uploaded. ${JSON.stringify(data || {})}`);
+      toast.success('Relevance file uploaded');
+      workflowStatusQuery.refetch();
+    },
+    onError: error => toast.error(getErrorMessage(error, 'Relevance upload failed')),
+  });
+
+  const resetWorkflowMutation = useMutation({
+    mutationFn: resetWorkflow,
+    onSuccess: data => {
+      setPlatformState({ importCompleted: false, indexBuilt: false, relevanceAvailable: false });
+      setResultMessage(`Workflow reset. ${JSON.stringify(data || {})}`);
+      toast.success('Workflow reset completed');
+      workflowStatusQuery.refetch();
+    },
+    onError: error => toast.error(getErrorMessage(error, 'Workflow reset failed')),
+  });
+
   const anyImportBusy =
     cisiMutation.isPending ||
     pubmedMutation.isPending ||
     bulkUploadMutation.isPending ||
     simpleUploadMutation.isPending ||
     uploadCisiMutation.isPending ||
-    uploadPubmedMutation.isPending;
+    uploadPubmedMutation.isPending ||
+    uploadQueriesMutation.isPending ||
+    uploadRelevanceMutation.isPending ||
+    workflowUploadMutation.isPending ||
+    resetWorkflowMutation.isPending;
 
   const busyUpload =
     bulkUploadMutation.isPending ||
@@ -439,6 +500,72 @@ export function DataSourcePage() {
                   </pre>
                 </div>
               </div>
+            )}
+          </div>
+        </div>
+      </Card>
+
+      <Card title="Workflow endpoints (queries, relevance, status)">
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-3 rounded border border-slate-700 p-3">
+            <p className="text-sm text-slate-300">
+              Upload supplemental files for evaluation routes.
+            </p>
+            <input
+              type="file"
+              accept=".qry,.txt,.json"
+              onChange={e => setQueryFile(e.target.files?.[0] || null)}
+              className="block w-full text-sm"
+            />
+            <div className="flex flex-wrap gap-2">
+              <Button
+                disabled={!queryFile || anyImportBusy}
+                onClick={() => uploadQueriesMutation.mutate(queryFile)}
+              >
+                Upload queries
+              </Button>
+              <Button
+                className="bg-slate-700 hover:bg-slate-800"
+                disabled={!queryFile || anyImportBusy}
+                onClick={() => workflowUploadMutation.mutate(queryFile)}
+              >
+                Workflow upload
+              </Button>
+            </div>
+            <input
+              type="file"
+              accept=".rel,.txt,.json"
+              onChange={e => setRelevanceFile(e.target.files?.[0] || null)}
+              className="block w-full text-sm"
+            />
+            <div className="flex flex-wrap gap-2">
+              <Button
+                disabled={!relevanceFile || anyImportBusy}
+                onClick={() => uploadRelevanceMutation.mutate(relevanceFile)}
+              >
+                Upload relevance
+              </Button>
+              <Button
+                className="border-red-500/50 bg-red-900/40 hover:bg-red-900/60"
+                disabled={anyImportBusy}
+                onClick={() => resetWorkflowMutation.mutate()}
+              >
+                Reset workflow
+              </Button>
+            </div>
+          </div>
+          <div className="rounded border border-slate-700 bg-slate-950/60 p-3">
+            <p className="mb-2 text-xs text-slate-500">`GET /workflow/status`</p>
+            {workflowStatusQuery.isLoading ? (
+              <p className="text-sm text-slate-400">Loading workflow status…</p>
+            ) : workflowStatusQuery.isError ? (
+              <p className="text-sm text-rose-300">
+                {getErrorMessage(workflowStatusQuery.error, 'Workflow status unavailable')}
+              </p>
+            ) : (
+              <pre className="max-h-56 overflow-auto text-xs text-slate-200">
+                {JSON.stringify(workflowStatusQuery.data || {}, null, 2)}
+              </pre>
             )}
           </div>
         </div>

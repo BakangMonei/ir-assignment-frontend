@@ -1,8 +1,6 @@
-import { http } from '../../../shared/api/httpClient';
-import { ENDPOINTS, getBackendRootOrigin } from '../../../shared/constants/endpoints';
+import { requestWithAliases } from '../../../shared/api/apiUtils';
+import { ENDPOINT_ALIASES } from '../../../shared/constants/endpoints';
 import { normalizeEvaluationMetrics, normalizePrCurveForChart } from '../utils/evaluationNormalize';
-
-const EVALUATION_RUN_PATH = '/evaluation/run';
 
 /**
  * POST /evaluation/run (root controller, not /api/evaluation/run).
@@ -18,14 +16,40 @@ export function runEvaluation(payload) {
     .map(String)
     .map(s => s.trim())
     .filter(Boolean);
-  const url = `${getBackendRootOrigin()}${EVALUATION_RUN_PATH}`;
-  return http.post(url, { retrievedDocIds, relevantDocIds });
+  return requestWithAliases({
+    method: 'post',
+    paths: ENDPOINT_ALIASES.evaluationRun,
+    config: { data: { retrievedDocIds, relevantDocIds } },
+  });
 }
 
 export function getEvaluationMetrics() {
-  return http.get(ENDPOINTS.evaluationMetrics).then(normalizeEvaluationMetrics);
+  return requestWithAliases({
+    method: 'get',
+    paths: ENDPOINT_ALIASES.evaluationMetrics,
+  }).then(normalizeEvaluationMetrics);
 }
 
 export function getPRCurve() {
-  return http.get(ENDPOINTS.evaluationPRCurve).then(normalizePrCurveForChart);
+  return requestWithAliases({
+    method: 'get',
+    paths: ENDPOINT_ALIASES.evaluationPrCurve,
+  }).then(normalizePrCurveForChart);
+}
+
+export function runEvaluationSearch(params) {
+  return requestWithAliases({
+    method: 'get',
+    paths: ENDPOINT_ALIASES.evaluationSearch,
+    config: { params },
+  });
+}
+
+export function compareEvaluationBy(type, params) {
+  const map = {
+    tokenizer: ENDPOINT_ALIASES.evaluationCompareTokenizers,
+    stemming: ENDPOINT_ALIASES.evaluationCompareStemming,
+    ranking: ENDPOINT_ALIASES.evaluationCompareRanking,
+  };
+  return requestWithAliases({ method: 'get', paths: map[type] || [], config: { params } });
 }

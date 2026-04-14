@@ -1,5 +1,6 @@
 import { http } from '../../../shared/api/httpClient';
-import { ENDPOINTS } from '../../../shared/constants/endpoints';
+import { requestWithAliases } from '../../../shared/api/apiUtils';
+import { ENDPOINTS, ENDPOINT_ALIASES } from '../../../shared/constants/endpoints';
 
 /** GET /api/search (lengthNorm) + DTO field applyLengthNormalization when both are useful for the backend. */
 function buildSearchParams(raw) {
@@ -30,7 +31,11 @@ function buildSearchParams(raw) {
 }
 
 export function performSearch(params) {
-  return http.get(ENDPOINTS.search, { params: buildSearchParams(params) });
+  return requestWithAliases({
+    method: 'get',
+    paths: ENDPOINT_ALIASES.search,
+    config: { params: buildSearchParams(params) },
+  });
 }
 
 /**
@@ -42,5 +47,8 @@ export function performIrSearch(body) {
 }
 
 export function expandQuery(query) {
-  return http.post(`${ENDPOINTS.searchExpand}?query=${encodeURIComponent(query)}`);
+  return requestWithAliases({
+    method: 'post',
+    paths: ENDPOINT_ALIASES.searchExpand.map(path => `${path}?query=${encodeURIComponent(query)}`),
+  });
 }

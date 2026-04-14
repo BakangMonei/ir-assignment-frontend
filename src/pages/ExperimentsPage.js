@@ -5,7 +5,12 @@ import { toast } from 'react-toastify';
 import { BarChart } from 'lucide-react';
 import { performSearch } from '../features/search/api/searchApi';
 import { getPRCurve, runEvaluation } from '../features/evaluation/api/evaluationApi';
-import { getDatasetEval, runCisiBenchmark } from '../features/experiments/api/experimentsApi';
+import {
+  buildExperimentVariant,
+  getDatasetEval,
+  runCisiBenchmark,
+  searchExperimentVariant,
+} from '../features/experiments/api/experimentsApi';
 import { usePlatformReadiness } from '../shared/hooks/usePlatformReadiness';
 import { downloadAsCsv, downloadAsJson } from '../shared/utils/downloadUtils';
 import { getErrorMessage } from '../shared/utils/errorUtils';
@@ -144,6 +149,18 @@ export function ExperimentsPage() {
       console.log('Dataset evaluation', body);
     },
     onError: error => toast.error(getErrorMessage(error, 'Dataset evaluation failed.')),
+  });
+
+  const variantBuildMutation = useMutation({
+    mutationFn: payload => buildExperimentVariant(payload),
+    onSuccess: () => toast.success('Variant build finished'),
+    onError: error => toast.error(getErrorMessage(error, 'Variant build failed')),
+  });
+
+  const variantSearchMutation = useMutation({
+    mutationFn: payload => searchExperimentVariant(payload),
+    onSuccess: () => toast.success('Variant search finished'),
+    onError: error => toast.error(getErrorMessage(error, 'Variant search failed')),
   });
 
   const mergedCurve = useMemo(() => runs.flatMap(run => run.curve || []), [runs]);
@@ -321,6 +338,22 @@ export function ExperimentsPage() {
             disabled={!readiness.searchEnabled || !form.query.trim() || runMutation.isPending}
           >
             Run Experiment
+          </Button>
+          <Button
+            className="bg-emerald-700 hover:bg-emerald-800"
+            onClick={() => variantBuildMutation.mutate({ dataset: form.dataset })}
+            disabled={variantBuildMutation.isPending}
+          >
+            Build variant
+          </Button>
+          <Button
+            className="bg-teal-700 hover:bg-teal-800"
+            onClick={() =>
+              variantSearchMutation.mutate({ query: form.query, dataset: form.dataset })
+            }
+            disabled={variantSearchMutation.isPending || !form.query.trim()}
+          >
+            Search variant
           </Button>
           <Button
             className="bg-slate-700 hover:bg-slate-800"
