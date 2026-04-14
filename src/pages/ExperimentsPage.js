@@ -33,6 +33,54 @@ const defaultForm = {
   retrievedDocIds: '',
 };
 
+function normalizeMetrics(raw) {
+  if (!raw || typeof raw !== 'object') return {};
+  return {
+    ...raw,
+    f1: raw.f1 ?? raw.f1Score ?? raw.f1score ?? null,
+    map: raw.map ?? raw.meanAveragePrecision ?? null,
+  };
+}
+
+function toBoolean(value, fallback = false) {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const v = value.toLowerCase();
+    if (v === 'true' || v === 'yes' || v === '1') return true;
+    if (v === 'false' || v === 'no' || v === '0') return false;
+  }
+  return fallback;
+}
+
+function normalizeBenchmarkRows(body) {
+  const rawRows = body?.comparisons ?? body?.rows ?? body?.results ?? [];
+  if (!Array.isArray(rawRows)) return [];
+  return rawRows.map((item, idx) => {
+    const metrics = normalizeMetrics(item.metrics || item);
+    return {
+      id: `benchmark-${Date.now()}-${idx}`,
+      createdAt: new Date().toISOString(),
+      label: item.label || item.configuration || `benchmark-${idx + 1}`,
+      dataset: item.dataset || 'CISI',
+      config: {
+        model: item.model || item.rankingAlgorithm || item.ranking || 'unknown',
+        stemming: toBoolean(item.stemming ?? item.useStemming, false),
+        expansion: toBoolean(item.expansion ?? item.useExpansion, false),
+        tokenizer: item.tokenizer || item.tokenizerType || 'default',
+        lengthNorm: toBoolean(item.lengthNorm ?? item.lengthNormalization, true),
+        page: Number(item.page ?? 0),
+        size: Number(item.size ?? 0),
+        query: item.query || '',
+      },
+      resultCount: Number(item.resultCount ?? item.hits ?? item.totalHits ?? 0),
+      latencyMs: Number(item.latencyMs ?? item.queryTimeMs ?? 0),
+      metrics,
+      curve: [],
+      source: 'benchmark',
+    };
+  });
+}
+
 function toCurveWithRunId(curve, runId, label) {
   if (!Array.isArray(curve)) return [];
   return curve.map(point => ({
@@ -123,14 +171,16 @@ export function ExperimentsPage() {
   const benchmarkMutation = useMutation({
     mutationFn: runCisiBenchmark,
     onSuccess: body => {
-      const rows = body?.comparisons?.length ?? body?.rows?.length ?? 0;
+      const normalizedRuns = normalizeBenchmarkRows(body);
+      if (normalizedRuns.length > 0) {
+        setRuns(prev => [...normalizedRuns, ...prev]);
+      }
+      const rows = normalizedRuns.length;
       toast.success(
         rows
-          ? `Benchmark finished (${rows} configuration rows). Full JSON logged to console.`
+          ? `Benchmark finished (${rows} configuration rows) and added to table.`
           : 'Benchmark finished.'
       );
-      // eslint-disable-next-line no-console
-      console.log('CISI benchmark result', body);
     },
     onError: error =>
       toast.error(getErrorMessage(error, 'CISI benchmark failed (timeout or server error).')),
@@ -139,14 +189,35 @@ export function ExperimentsPage() {
   const datasetEvalMutation = useMutation({
     mutationFn: () => getDatasetEval({ dataset: 'CISI' }),
     onSuccess: body => {
-      const mapVal = body?.map ?? body?.meanAveragePrecision;
+      const metrics = normalizeMetrics(body);
+      const mapVal = metrics.map;
       const mapStr =
         mapVal != null && Number.isFinite(Number(mapVal)) ? Number(mapVal).toFixed(4) : '—';
-      const p = body?.precision != null ? Number(body.precision).toFixed(4) : '—';
-      const r = body?.recall != null ? Number(body.recall).toFixed(4) : '—';
+      const p = metrics.precision != null ? Number(metrics.precision).toFixed(4) : '—';
+      const r = metrics.recall != null ? Number(metrics.recall).toFixed(4) : '—';
+      const run = {
+        id: `dataset-eval-${Date.now()}`,
+        createdAt: new Date().toISOString(),
+        label: 'quick-cisi-map',
+        dataset: 'CISI',
+        config: {
+          model: body?.model || body?.rankingAlgorithm || 'dataset-eval',
+          stemming: toBoolean(body?.stemming ?? body?.useStemming, false),
+          expansion: false,
+          tokenizer: body?.tokenizer || body?.tokenizerType || 'default',
+          lengthNorm: toBoolean(body?.lengthNorm ?? body?.lengthNormalization, true),
+          page: 0,
+          size: Number(body?.queriesEvaluated ?? 0),
+          query: '',
+        },
+        resultCount: Number(body?.queriesEvaluated ?? 0),
+        latencyMs: Number(body?.latencyMs ?? 0),
+        metrics,
+        curve: [],
+        source: 'dataset-eval',
+      };
+      setRuns(prev => [run, ...prev]);
       toast.success(`Queries: ${body?.queriesEvaluated ?? '—'} — MAP ${mapStr}, P ${p}, R ${r}`);
-      // eslint-disable-next-line no-console
-      console.log('Dataset evaluation', body);
     },
     onError: error => toast.error(getErrorMessage(error, 'Dataset evaluation failed.')),
   });
@@ -368,13 +439,15 @@ export function ExperimentsPage() {
               downloadAsCsv(
                 runs.map(run => ({
                   id: run.id,
+                  source: run.source || 'manual',
+                  label: run.label,
                   dataset: run.dataset,
                   config: JSON.stringify(run.config),
                   resultCount: run.resultCount,
                   latencyMs: run.latencyMs,
                   precision: run.metrics?.precision,
                   recall: run.metrics?.recall,
-                  f1: run.metrics?.f1,
+                  f1: run.metrics?.f1 ?? run.metrics?.f1Score,
                   map: run.metrics?.map,
                   createdAt: run.createdAt,
                 })),
@@ -407,6 +480,7 @@ export function ExperimentsPage() {
               <thead className="bg-slate-900/90">
                 <tr>
                   <th className="px-3 py-2 text-left">Run</th>
+                  <th className="px-3 py-2 text-left">Source</th>
                   <th className="px-3 py-2 text-left">Dataset</th>
                   <th className="px-3 py-2 text-left">Model</th>
                   <th className="px-3 py-2 text-left">Stem</th>
@@ -424,6 +498,7 @@ export function ExperimentsPage() {
                 {runs.map(run => (
                   <tr key={run.id} className="border-t border-slate-700/70">
                     <td className="px-3 py-2">{run.id}</td>
+                    <td className="px-3 py-2">{run.source || 'manual'}</td>
                     <td className="px-3 py-2">{run.dataset}</td>
                     <td className="px-3 py-2">{run.config.model}</td>
                     <td className="px-3 py-2">{run.config.stemming ? 'Yes' : 'No'}</td>
@@ -433,7 +508,7 @@ export function ExperimentsPage() {
                     <td className="px-3 py-2">{run.latencyMs}</td>
                     <td className="px-3 py-2">{run.metrics?.precision ?? '-'}</td>
                     <td className="px-3 py-2">{run.metrics?.recall ?? '-'}</td>
-                    <td className="px-3 py-2">{run.metrics?.f1 ?? '-'}</td>
+                    <td className="px-3 py-2">{run.metrics?.f1 ?? run.metrics?.f1Score ?? '-'}</td>
                     <td className="px-3 py-2">{run.metrics?.map ?? '-'}</td>
                   </tr>
                 ))}
