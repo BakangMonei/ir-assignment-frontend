@@ -13,11 +13,21 @@ import {
 import { Button, Card, EmptyState, Select, Spinner } from '../shared/ui/UiPrimitives';
 import { getErrorMessage } from '../shared/utils/errorUtils';
 import { setPlatformState } from '../shared/state/platformState';
+import { usePlatformReadiness } from '../shared/hooks/usePlatformReadiness';
 
 const ACCEPTED_TYPES = '.txt,.xml,.zip,.all';
 
+const defaultBulkIr = {
+  tokenizerType: 'standard',
+  useStemming: false,
+  rankingAlgorithm: 'bm25',
+  lengthNormalization: true,
+};
+
 export function DataSourcePage() {
   const queryClient = useQueryClient();
+  const readiness = usePlatformReadiness();
+  const [bulkIr, setBulkIr] = useState(defaultBulkIr);
   const [selectedFile, setSelectedFile] = useState(null);
   const [resultMessage, setResultMessage] = useState('');
   const [filePreview, setFilePreview] = useState('');
@@ -72,6 +82,10 @@ export function DataSourcePage() {
     onSuccess: data => {
       setPlatformState({ dataset: 'CISI', importCompleted: true, relevanceAvailable: true });
       queryClient.invalidateQueries({ queryKey: ['index-status-readiness'] });
+      queryClient.invalidateQueries({ queryKey: ['index-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['index-metrics'] });
+      queryClient.invalidateQueries({ queryKey: ['index-health'] });
+      queryClient.invalidateQueries({ queryKey: ['index-config-bundle'] });
       setResultMessage(`CISI import completed. ${JSON.stringify(data || {})}`);
       toast.success('CISI imported successfully. Next step: build index.');
     },
@@ -83,6 +97,10 @@ export function DataSourcePage() {
     onSuccess: data => {
       setPlatformState({ dataset: 'PubMed', importCompleted: true, relevanceAvailable: false });
       queryClient.invalidateQueries({ queryKey: ['index-status-readiness'] });
+      queryClient.invalidateQueries({ queryKey: ['index-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['index-metrics'] });
+      queryClient.invalidateQueries({ queryKey: ['index-health'] });
+      queryClient.invalidateQueries({ queryKey: ['index-config-bundle'] });
       setResultMessage(`PubMed import completed. ${JSON.stringify(data || {})}`);
       toast.success('PubMed imported successfully. Next step: build index.');
     },
@@ -90,13 +108,16 @@ export function DataSourcePage() {
   });
 
   const bulkUploadMutation = useMutation({
-    mutationFn: ({ file, mode }) => {
+    mutationFn: ({ file, mode, indexingOptions }) => {
       const dataset = mode === 'auto' ? inferDatasetFromFilename(file.name) : mode;
-      return bulkIndexDocumentsFromFile(file, { dataset });
+      return bulkIndexDocumentsFromFile(file, { dataset, ...indexingOptions });
     },
     onSuccess: data => {
       setPlatformState({ dataset: 'Uploaded', importCompleted: true, relevanceAvailable: false });
       queryClient.invalidateQueries({ queryKey: ['documents'] });
+      queryClient.invalidateQueries({ queryKey: ['index-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['index-metrics'] });
+      queryClient.invalidateQueries({ queryKey: ['index-config-bundle'] });
       setResultMessage(
         `Bulk index completed (${data.documentCount} docs, dataset ${data.dataset}). ${JSON.stringify(data.raw ?? data)}`
       );
@@ -161,6 +182,24 @@ export function DataSourcePage() {
 
   return (
     <div className="space-y-4">
+      {readiness.backendStatus === 'connected' && !readiness.importCompleted && (
+        <Card title="IR setup guide">
+          <p className="mb-3 text-sm text-slate-300">
+            The API is reachable but no corpus is registered in this browser session yet. Typical
+            workflow:
+          </p>
+          <ol className="list-decimal space-y-2 pl-5 text-sm text-slate-300">
+            <li>Import CISI or PubMed from the server, or bulk-upload a corpus file.</li>
+            <li>
+              Optional: set tokenizer, stemming, ranking, and length normalization for bulk indexing
+              (same fields as the standalone IR UI).
+            </li>
+            <li>Go to <strong className="text-cyan-200">Indexing</strong> and build the Lucene index.</li>
+            <li>Use <strong className="text-cyan-200">Search</strong> or <strong className="text-cyan-200">Experiments</strong> for runs and exports.</li>
+          </ol>
+        </Card>
+      )}
+
       <Card title="Dataset Setup (Entry Point)">
         <p className="mb-4 text-sm text-gray-300">
           Start by importing a built-in dataset or uploading custom files. Search and Evaluation are
@@ -250,6 +289,50 @@ export function DataSourcePage() {
                 <option value="PUBMED">PUBMED</option>
               </Select>
             </div>
+            <div className="mt-3 rounded-md border border-slate-700 bg-slate-900/50 p-3">
+              <p className="mb-2 text-xs font-medium text-cyan-200/90">
+                Bulk POST fields (tokenizer / stem / ranking / length norm)
+              </p>
+              <div className="grid gap-2 md:grid-cols-2">
+                <Select
+                  value={bulkIr.tokenizerType}
+                  disabled={anyImportBusy}
+                  className="text-sm"
+                  onChange={e => setBulkIr(v => ({ ...v, tokenizerType: e.target.value }))}
+                >
+                  <option value="standard">Tokenizer: standard</option>
+                  <option value="custom">Tokenizer: custom</option>
+                </Select>
+                <Select
+                  value={bulkIr.rankingAlgorithm}
+                  disabled={anyImportBusy}
+                  className="text-sm"
+                  onChange={e => setBulkIr(v => ({ ...v, rankingAlgorithm: e.target.value }))}
+                >
+                  <option value="bm25">Ranking: BM25</option>
+                  <option value="tf-idf">Ranking: TF-IDF</option>
+                  <option value="tf">Ranking: TF</option>
+                </Select>
+              </div>
+              <label className="mt-2 flex items-center gap-2 text-sm text-slate-200">
+                <input
+                  type="checkbox"
+                  checked={bulkIr.useStemming}
+                  disabled={anyImportBusy}
+                  onChange={e => setBulkIr(v => ({ ...v, useStemming: e.target.checked }))}
+                />
+                Stemming during bulk index
+              </label>
+              <label className="mt-1 flex items-center gap-2 text-sm text-slate-200">
+                <input
+                  type="checkbox"
+                  checked={bulkIr.lengthNormalization}
+                  disabled={anyImportBusy}
+                  onChange={e => setBulkIr(v => ({ ...v, lengthNormalization: e.target.checked }))}
+                />
+                Length normalization
+              </label>
+            </div>
             <input
               className="mt-3 block w-full text-sm"
               type="file"
@@ -272,7 +355,13 @@ export function DataSourcePage() {
                   uploadCisiMutation.isPending ||
                   uploadPubmedMutation.isPending
                 }
-                onClick={() => bulkUploadMutation.mutate({ file: selectedFile, mode: datasetMode })}
+                onClick={() =>
+                  bulkUploadMutation.mutate({
+                    file: selectedFile,
+                    mode: datasetMode,
+                    indexingOptions: bulkIr,
+                  })
+                }
               >
                 <span className="flex items-center justify-center gap-2">
                   {bulkUploadMutation.isPending ? <Spinner /> : null}

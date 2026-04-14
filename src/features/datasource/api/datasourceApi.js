@@ -25,10 +25,13 @@ export function inferDatasetFromFilename(filename) {
   return 'PUBMED';
 }
 
+const IMPORT_TIMEOUT_MS = 300_000;
+
 export function importCisi(filePath) {
   return legacy
     .post(ENDPOINTS.indexImportCisi, null, {
       params: filePath ? { filePath } : {},
+      timeout: IMPORT_TIMEOUT_MS,
     })
     .then(r => r.data?.data ?? r.data);
 }
@@ -37,6 +40,7 @@ export function importPubmed(filePath) {
   return legacy
     .post(ENDPOINTS.indexImportPubmed, null, {
       params: filePath ? { filePath } : {},
+      timeout: IMPORT_TIMEOUT_MS,
     })
     .then(r => r.data?.data ?? r.data);
 }

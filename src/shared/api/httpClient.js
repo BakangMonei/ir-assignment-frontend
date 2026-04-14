@@ -3,7 +3,8 @@ import { API_BASE_URL } from '../constants/endpoints';
 
 const http = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 20_000,
+  timeout: 30_000,
+  headers: { Accept: 'application/json' },
 });
 
 http.interceptors.request.use(config => {

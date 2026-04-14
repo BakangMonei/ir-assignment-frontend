@@ -2,12 +2,15 @@ import { useMemo, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { toast } from 'react-toastify';
+import { BarChart } from 'lucide-react';
 import { performSearch } from '../features/search/api/searchApi';
 import { getPRCurve, runEvaluation } from '../features/evaluation/api/evaluationApi';
+import { getDatasetEval, runCisiBenchmark } from '../features/experiments/api/experimentsApi';
 import { usePlatformReadiness } from '../shared/hooks/usePlatformReadiness';
 import { downloadAsCsv, downloadAsJson } from '../shared/utils/downloadUtils';
 import { getErrorMessage } from '../shared/utils/errorUtils';
-import { Button, Card, EmptyState, Input, Select } from '../shared/ui/UiPrimitives';
+import { normalizeSearchRows } from '../shared/utils/searchResponseUtils';
+import { Button, Card, EmptyState, Input, Select, Spinner } from '../shared/ui/UiPrimitives';
 
 const COLORS = ['#22d3ee', '#818cf8', '#34d399', '#f59e0b', '#f472b6', '#60a5fa'];
 
@@ -18,21 +21,12 @@ const defaultForm = {
   stemming: true,
   expansion: false,
   tokenizer: 'default',
+  lengthNorm: true,
   page: 0,
   size: 10,
   relevantDocIds: '',
   retrievedDocIds: '',
 };
-
-function normalizeSearchRows(raw) {
-  if (Array.isArray(raw)) return raw;
-  if (!raw || typeof raw !== 'object') return [];
-  if (Array.isArray(raw.content)) return raw.content;
-  if (Array.isArray(raw.items)) return raw.items;
-  if (Array.isArray(raw.results)) return raw.results;
-  if (Array.isArray(raw.documents)) return raw.documents;
-  return [];
-}
 
 function toCurveWithRunId(curve, runId, label) {
   if (!Array.isArray(curve)) return [];
@@ -59,6 +53,7 @@ export function ExperimentsPage() {
         expansion: payload.expansion,
         page: payload.page,
         size: payload.size,
+        lengthNorm: payload.lengthNorm,
       };
 
       if (payload.dataset) searchPayload.category = payload.dataset;
@@ -92,7 +87,7 @@ export function ExperimentsPage() {
     },
     onSuccess: data => {
       const runId = `run-${Date.now()}`;
-      const label = `${form.dataset}|${form.model}|${form.stemming ? 'stem' : 'no-stem'}|${form.expansion ? 'exp' : 'no-exp'}|${form.tokenizer}`;
+      const label = `${form.dataset}|${form.model}|${form.stemming ? 'stem' : 'no-stem'}|${form.expansion ? 'exp' : 'no-exp'}|${form.tokenizer}|ln:${form.lengthNorm ? '1' : '0'}`;
       const run = {
         id: runId,
         createdAt: new Date().toISOString(),
@@ -103,6 +98,7 @@ export function ExperimentsPage() {
           stemming: form.stemming,
           expansion: form.expansion,
           tokenizer: form.tokenizer,
+          lengthNorm: form.lengthNorm,
           page: form.page,
           size: form.size,
           query: form.query,
@@ -117,6 +113,35 @@ export function ExperimentsPage() {
       toast.success('Experiment run added to comparison table');
     },
     onError: error => toast.error(getErrorMessage(error, 'Experiment run failed')),
+  });
+
+  const benchmarkMutation = useMutation({
+    mutationFn: runCisiBenchmark,
+    onSuccess: body => {
+      const rows = body?.comparisons?.length ?? body?.rows?.length ?? 0;
+      toast.success(
+        rows ? `Benchmark finished (${rows} configuration rows). Full JSON logged to console.` : 'Benchmark finished.'
+      );
+      // eslint-disable-next-line no-console
+      console.log('CISI benchmark result', body);
+    },
+    onError: error =>
+      toast.error(getErrorMessage(error, 'CISI benchmark failed (timeout or server error).')),
+  });
+
+  const datasetEvalMutation = useMutation({
+    mutationFn: () => getDatasetEval({ dataset: 'CISI' }),
+    onSuccess: body => {
+      const mapVal = body?.map ?? body?.meanAveragePrecision;
+      const mapStr =
+        mapVal != null && Number.isFinite(Number(mapVal)) ? Number(mapVal).toFixed(4) : '—';
+      const p = body?.precision != null ? Number(body.precision).toFixed(4) : '—';
+      const r = body?.recall != null ? Number(body.recall).toFixed(4) : '—';
+      toast.success(`Queries: ${body?.queriesEvaluated ?? '—'} — MAP ${mapStr}, P ${p}, R ${r}`);
+      // eslint-disable-next-line no-console
+      console.log('Dataset evaluation', body);
+    },
+    onError: error => toast.error(getErrorMessage(error, 'Dataset evaluation failed.')),
   });
 
   const mergedCurve = useMemo(() => runs.flatMap(run => run.curve || []), [runs]);
@@ -137,6 +162,44 @@ export function ExperimentsPage() {
 
   return (
     <div className="space-y-4">
+      <Card title="CISI batch evaluation (backend)">
+        <p className="mb-3 text-sm text-slate-400">
+          Mirrors the standalone IR UI: full grid over tokenizers, stemming, and ranking models, plus a
+          quick MAP run on default CISI query and relevance files on the server.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            className="bg-violet-600 hover:bg-violet-700"
+            disabled={benchmarkMutation.isPending || datasetEvalMutation.isPending}
+            onClick={() => benchmarkMutation.mutate()}
+          >
+            {benchmarkMutation.isPending ? (
+              <span className="flex items-center gap-2">
+                <Spinner /> Running benchmark…
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <BarChart className="h-4 w-4" />
+                Run full CISI benchmark
+              </span>
+            )}
+          </Button>
+          <Button
+            className="bg-slate-700 hover:bg-slate-800"
+            disabled={benchmarkMutation.isPending || datasetEvalMutation.isPending}
+            onClick={() => datasetEvalMutation.mutate()}
+          >
+            {datasetEvalMutation.isPending ? (
+              <span className="flex items-center gap-2">
+                <Spinner /> Evaluating…
+              </span>
+            ) : (
+              'Quick CISI MAP (default QRY/REL)'
+            )}
+          </Button>
+        </div>
+      </Card>
+
       <Card title="Experiments & Comparison">
         {!readiness.searchEnabled && (
           <div className="mb-4 rounded-md border border-amber-500/40 bg-amber-500/15 p-3 text-sm text-amber-200">
@@ -179,6 +242,7 @@ export function ExperimentsPage() {
             <option value="standard">Tokenizer: standard</option>
             <option value="whitespace">Tokenizer: whitespace</option>
             <option value="classic">Tokenizer: classic</option>
+            <option value="custom">Tokenizer: custom</option>
           </Select>
           <Input
             type="number"
@@ -192,7 +256,7 @@ export function ExperimentsPage() {
             value={form.size}
             onChange={e => setForm(v => ({ ...v, size: Number(e.target.value) || 10 }))}
           />
-          <div className="flex items-center gap-3 rounded-md border border-slate-700 px-3">
+          <div className="flex flex-wrap items-center gap-3 rounded-md border border-slate-700 px-3 py-2">
             <label className="text-sm">
               <input
                 type="checkbox"
@@ -208,6 +272,14 @@ export function ExperimentsPage() {
                 onChange={e => setForm(v => ({ ...v, expansion: e.target.checked }))}
               />{' '}
               Expansion
+            </label>
+            <label className="text-sm">
+              <input
+                type="checkbox"
+                checked={form.lengthNorm}
+                onChange={e => setForm(v => ({ ...v, lengthNorm: e.target.checked }))}
+              />{' '}
+              Length norm
             </label>
           </div>
         </div>

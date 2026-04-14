@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
 import { expandQuery, performSearch } from '../features/search/api/searchApi';
@@ -6,12 +6,15 @@ import { Button, Card, EmptyState, Input, Select } from '../shared/ui/UiPrimitiv
 import { getErrorMessage } from '../shared/utils/errorUtils';
 import { usePlatformReadiness } from '../shared/hooks/usePlatformReadiness';
 import { downloadAsCsv, downloadAsJson } from '../shared/utils/downloadUtils';
+import { extractSearchMeta } from '../shared/utils/searchResponseUtils';
 
 const defaultSearch = {
   query: '',
   model: 'tfidf',
+  tokenizer: 'standard',
   stemming: true,
   expansion: false,
+  lengthNorm: true,
   category: '',
   year: '',
   keywords: '',
@@ -19,18 +22,6 @@ const defaultSearch = {
   page: 0,
   size: 10,
 };
-
-function normalizeSearchRows(raw) {
-  if (Array.isArray(raw)) return raw;
-  if (!raw || typeof raw !== 'object') return [];
-
-  if (Array.isArray(raw.content)) return raw.content;
-  if (Array.isArray(raw.items)) return raw.items;
-  if (Array.isArray(raw.results)) return raw.results;
-  if (Array.isArray(raw.documents)) return raw.documents;
-
-  return [];
-}
 
 export function SearchPage() {
   const readiness = usePlatformReadiness();
@@ -40,9 +31,11 @@ export function SearchPage() {
 
   const { data, isFetching, isError, error } = useQuery({
     queryKey: ['search', params],
-    queryFn: () => performSearch(params),
+    queryFn: () => performSearch(buildApiSearchParams(params)),
     enabled,
   });
+
+  const searchMeta = useMemo(() => extractSearchMeta(data), [data]);
 
   const expandMutation = useMutation({
     mutationFn: () => expandQuery(params.query),
@@ -54,7 +47,7 @@ export function SearchPage() {
     onError: error => toast.error(getErrorMessage(error)),
   });
 
-  const rows = normalizeSearchRows(data);
+  const rows = searchMeta.rows;
 
   return (
     <Card
@@ -69,8 +62,8 @@ export function SearchPage() {
       }
     >
       {!readiness.searchEnabled && (
-        <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-          Search is disabled until data is imported/uploaded and index build is completed.
+        <div className="mb-4 rounded-md border border-amber-500/40 bg-amber-500/15 p-3 text-sm text-amber-200">
+          Search is disabled until data is imported or uploaded and the index is built.
         </div>
       )}
       <div className="mb-4 grid gap-2 md:grid-cols-4">
@@ -88,11 +81,15 @@ export function SearchPage() {
           <option value="normalized">normalized</option>
           <option value="bm25">bm25</option>
         </Select>
-        <Input
-          placeholder="Keywords"
-          value={params.keywords}
-          onChange={e => setParams(v => ({ ...v, keywords: e.target.value }))}
-        />
+        <Select
+          value={params.tokenizer}
+          onChange={e => setParams(v => ({ ...v, tokenizer: e.target.value }))}
+        >
+          <option value="standard">Tokenizer: standard</option>
+          <option value="custom">Tokenizer: custom</option>
+          <option value="whitespace">Tokenizer: whitespace</option>
+          <option value="classic">Tokenizer: classic</option>
+        </Select>
         <Select
           value={params.operator}
           onChange={e => setParams(v => ({ ...v, operator: e.target.value }))}
@@ -103,6 +100,11 @@ export function SearchPage() {
       </div>
       <div className="mb-4 grid gap-2 md:grid-cols-4">
         <Input
+          placeholder="Keywords"
+          value={params.keywords}
+          onChange={e => setParams(v => ({ ...v, keywords: e.target.value }))}
+        />
+        <Input
           placeholder="Category"
           value={params.category}
           onChange={e => setParams(v => ({ ...v, category: e.target.value }))}
@@ -112,6 +114,18 @@ export function SearchPage() {
           value={params.year}
           onChange={e => setParams(v => ({ ...v, year: e.target.value }))}
         />
+        <div className="flex items-center gap-3 rounded-md border border-slate-700 px-3 py-2">
+          <label className="text-sm text-slate-200">
+            <input
+              type="checkbox"
+              checked={params.lengthNorm}
+              onChange={e => setParams(v => ({ ...v, lengthNorm: e.target.checked }))}
+            />{' '}
+            Length norm
+          </label>
+        </div>
+      </div>
+      <div className="mb-4 grid gap-2 md:grid-cols-4">
         <Input
           placeholder="Page"
           type="number"
@@ -133,7 +147,7 @@ export function SearchPage() {
         >
           Expand Query
         </Button>
-        <label className="text-sm">
+        <label className="text-sm text-slate-200">
           <input
             type="checkbox"
             checked={params.stemming}
@@ -141,7 +155,7 @@ export function SearchPage() {
           />{' '}
           Stemming
         </label>
-        <label className="text-sm">
+        <label className="text-sm text-slate-200">
           <input
             type="checkbox"
             checked={params.expansion}
@@ -152,8 +166,31 @@ export function SearchPage() {
       </div>
 
       {expandedQueryText && (
-        <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
+        <div className="mb-4 rounded-md border border-emerald-500/30 bg-emerald-950/40 p-3 text-sm text-emerald-100">
           Expanded query: <span className="font-medium">{expandedQueryText}</span>
+        </div>
+      )}
+
+      {(searchMeta.latencyMs != null || searchMeta.totalHits != null) && rows.length > 0 && (
+        <div className="mb-4 grid gap-2 rounded-md border border-slate-700 bg-slate-900/60 p-3 text-sm text-slate-300 md:grid-cols-4">
+          <div>
+            <span className="text-slate-500">Total hits</span>{' '}
+            <span className="font-medium text-slate-100">{searchMeta.totalHits}</span>
+          </div>
+          <div>
+            <span className="text-slate-500">Latency</span>{' '}
+            <span className="font-medium text-slate-100">
+              {searchMeta.latencyMs != null ? `${searchMeta.latencyMs} ms` : '—'}
+            </span>
+          </div>
+          <div>
+            <span className="text-slate-500">P / R / F1</span>{' '}
+            <span className="font-medium text-slate-100">
+              {[searchMeta.precision, searchMeta.recall, searchMeta.f1Score]
+                .map(v => (v != null && Number.isFinite(Number(v)) ? Number(v).toFixed(3) : '—'))
+                .join(' / ')}
+            </span>
+          </div>
         </div>
       )}
 
@@ -175,7 +212,7 @@ export function SearchPage() {
       )}
 
       {isFetching ? (
-        <p className="text-sm text-gray-500">Searching...</p>
+        <p className="text-sm text-slate-400">Searching…</p>
       ) : isError ? (
         <EmptyState title="Search failed" description={getErrorMessage(error)} />
       ) : rows.length === 0 ? (
@@ -185,16 +222,42 @@ export function SearchPage() {
           {rows.map((item, idx) => (
             <li
               key={item.id || idx}
-              className="rounded border border-gray-200 bg-white p-3 text-sm"
+              className="rounded border border-slate-600 bg-slate-900/50 p-3 text-sm text-slate-100"
             >
               <div className="font-medium">
                 {item.title || item.documentId || `Result ${idx + 1}`}
               </div>
-              <div className="text-gray-500">Score: {item.score ?? 'N/A'}</div>
+              {item.content && (
+                <p className="mt-1 line-clamp-3 text-slate-400">{item.content}</p>
+              )}
+              <div className="mt-1 text-slate-500">
+                Score:{' '}
+                {item.score != null && !Number.isNaN(Number(item.score))
+                  ? Number(item.score).toFixed(4)
+                  : 'N/A'}
+              </div>
             </li>
           ))}
         </ul>
       )}
     </Card>
   );
+}
+
+function buildApiSearchParams(p) {
+  const out = {
+    query: p.query.trim(),
+    model: p.model,
+    stemming: p.stemming,
+    expansion: p.expansion,
+    operator: p.operator,
+    page: p.page,
+    size: p.size,
+    lengthNorm: p.lengthNorm,
+  };
+  if (p.keywords) out.keywords = p.keywords;
+  if (p.category) out.category = p.category;
+  if (p.year) out.year = p.year;
+  if (p.tokenizer) out.tokenizer = p.tokenizer;
+  return out;
 }
