@@ -71,7 +71,9 @@ export function Pill({ children, tone = 'default' }) {
       ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30'
       : tone === 'danger'
         ? 'bg-red-500/20 text-red-300 border border-red-400/30'
-        : 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/30';
+        : tone === 'warning'
+          ? 'bg-amber-500/20 text-amber-200 border border-amber-400/30'
+          : 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/30';
   return (
     <span className={`rounded-full px-2 py-1 text-xs font-medium ${toneClass}`}>{children}</span>
   );

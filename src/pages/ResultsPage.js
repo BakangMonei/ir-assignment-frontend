@@ -6,6 +6,15 @@ import { Button, Card, Input } from '../shared/ui/UiPrimitives';
 import { getErrorMessage } from '../shared/utils/errorUtils';
 import { downloadAsCsv, downloadAsJson } from '../shared/utils/downloadUtils';
 
+function normalizeResultsRows(raw) {
+  if (Array.isArray(raw)) return raw;
+  if (!raw || typeof raw !== 'object') return [];
+  if (Array.isArray(raw.content)) return raw.content;
+  if (Array.isArray(raw.items)) return raw.items;
+  if (Array.isArray(raw.results)) return raw.results;
+  return [];
+}
+
 export function ResultsPage() {
   const queryClient = useQueryClient();
   const [name, setName] = useState('');
@@ -31,7 +40,7 @@ export function ResultsPage() {
     onError: error => toast.error(getErrorMessage(error)),
   });
 
-  const rows = data?.content || data || [];
+  const rows = normalizeResultsRows(data);
 
   return (
     <Card
@@ -59,11 +68,13 @@ export function ResultsPage() {
       )}
       {isLoading ? (
         <p className="text-sm text-gray-500">Loading...</p>
+      ) : rows.length === 0 ? (
+        <p className="text-sm text-slate-400">No saved result sets.</p>
       ) : (
         <ul className="space-y-2">
           {rows.map(item => (
             <li
-              key={item.id}
+              key={item.id ?? item.name ?? JSON.stringify(item)}
               className="flex items-center justify-between rounded border border-gray-200 p-3 text-sm"
             >
               <span>{item.name || item.title || item.id}</span>

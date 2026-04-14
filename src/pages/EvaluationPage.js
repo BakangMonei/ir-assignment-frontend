@@ -8,6 +8,7 @@ import {
 } from '../features/evaluation/api/evaluationApi';
 import { Button, Card, EmptyState, Input } from '../shared/ui/UiPrimitives';
 import { usePlatformReadiness } from '../shared/hooks/usePlatformReadiness';
+import { getErrorMessage } from '../shared/utils/errorUtils';
 
 export function EvaluationPage() {
   const readiness = usePlatformReadiness();
@@ -15,8 +16,13 @@ export function EvaluationPage() {
   const metricsQuery = useQuery({
     queryKey: ['evaluation-metrics'],
     queryFn: getEvaluationMetrics,
+    retry: 2,
   });
-  const prCurveQuery = useQuery({ queryKey: ['evaluation-pr'], queryFn: getPRCurve });
+  const prCurveQuery = useQuery({
+    queryKey: ['evaluation-pr'],
+    queryFn: getPRCurve,
+    retry: 2,
+  });
 
   const runMutation = useMutation({ mutationFn: runEvaluation });
 
@@ -56,21 +62,44 @@ export function EvaluationPage() {
         </div>
       </Card>
       <Card title="Metrics">
-        <pre className="rounded border border-gray-700 bg-gray-800 p-3 text-xs  ">
-          {JSON.stringify(metricsQuery.data || runMutation.data || {}, null, 2)}
-        </pre>
+        {metricsQuery.isError ? (
+          <EmptyState
+            title="Could not load metrics"
+            description={getErrorMessage(metricsQuery.error)}
+          />
+        ) : metricsQuery.isLoading && !runMutation.data ? (
+          <p className="text-sm text-slate-400">Loading metrics…</p>
+        ) : (
+          <pre className="rounded border border-gray-700 bg-gray-800 p-3 text-xs  ">
+            {JSON.stringify(metricsQuery.data || runMutation.data || {}, null, 2)}
+          </pre>
+        )}
       </Card>
       <Card title="PR Curve">
-        <div className="h-72">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={prCurveQuery.data || []}>
-              <XAxis dataKey="recall" />
-              <YAxis dataKey="precision" />
-              <Tooltip />
-              <Line type="monotone" dataKey="precision" stroke="#2563eb" dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+        {prCurveQuery.isError ? (
+          <EmptyState
+            title="Could not load PR curve"
+            description={getErrorMessage(prCurveQuery.error)}
+          />
+        ) : prCurveQuery.isLoading ? (
+          <p className="text-sm text-slate-400">Loading PR curve…</p>
+        ) : !Array.isArray(prCurveQuery.data) || prCurveQuery.data.length === 0 ? (
+          <EmptyState
+            title="No PR curve data"
+            description="Run an evaluation with valid relevance data, or trigger a search-backed evaluation first."
+          />
+        ) : (
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={prCurveQuery.data}>
+                <XAxis dataKey="recall" />
+                <YAxis dataKey="precision" />
+                <Tooltip />
+                <Line type="monotone" dataKey="precision" stroke="#2563eb" dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </Card>
     </div>
   );

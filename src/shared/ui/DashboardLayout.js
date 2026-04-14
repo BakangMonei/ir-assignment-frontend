@@ -80,8 +80,18 @@ export function DashboardLayout({ children }) {
           />
           <div className="flex items-center gap-2">
             <Pill>{`Dataset: ${readiness.dataset}`}</Pill>
-            <Pill tone={readiness.backendConnected ? 'success' : 'danger'}>
-              {readiness.backendConnected ? 'Backend connected' : 'Backend disconnected'}
+            <Pill
+              tone={
+                readiness.backendStatus === 'connected'
+                  ? 'success'
+                  : readiness.backendStatus === 'error'
+                    ? 'danger'
+                    : 'warning'
+              }
+            >
+              {readiness.backendStatus === 'connected' && 'Backend connected'}
+              {readiness.backendStatus === 'pending' && 'Checking backend…'}
+              {readiness.backendStatus === 'error' && 'Backend unreachable'}
             </Pill>
           </div>
         </header>

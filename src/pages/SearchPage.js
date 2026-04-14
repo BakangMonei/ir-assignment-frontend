@@ -129,6 +129,7 @@ export function SearchPage() {
         <Button
           className="bg-emerald-600 hover:bg-emerald-700"
           onClick={() => expandMutation.mutate()}
+          disabled={!params.query.trim() || expandMutation.isPending}
         >
           Expand Query
         </Button>

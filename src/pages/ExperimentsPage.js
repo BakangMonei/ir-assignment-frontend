@@ -30,6 +30,7 @@ function normalizeSearchRows(raw) {
   if (Array.isArray(raw.content)) return raw.content;
   if (Array.isArray(raw.items)) return raw.items;
   if (Array.isArray(raw.results)) return raw.results;
+  if (Array.isArray(raw.documents)) return raw.documents;
   return [];
 }
 
